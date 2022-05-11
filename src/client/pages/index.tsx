@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NextPage } from 'next';
-
+import cookieCutter from 'cookie-cutter';
 const Home: NextPage = () => {
-  return <h1>Hello, World!</h1>;
+  const [jwt, setJwt] = useState('');
+  useEffect(() => {
+    const token = cookieCutter.get('jwt');
+    setJwt(token);
+  }, []);
+  return <h1>{jwt}</h1>;
 };
 
 export default Home;

@@ -21,7 +21,7 @@ export class AuthController {
   async spotifyAuthRedirect(
     @Req() req: any,
     @Res() res: Response,
-  ): Promise<Response> {
+  ): Promise<void> {
     const {
       user,
       authInfo,
@@ -52,7 +52,8 @@ export class AuthController {
     const jwt = this.authService.login(user);
 
     res.set('authorization', `Bearer ${jwt}`);
+    res.cookie('jwt', jwt);
 
-    return res.status(201).json(authUser);
+    res.redirect('/');
   }
 }
