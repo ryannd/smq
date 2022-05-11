@@ -1,8 +1,13 @@
 import { Box, Button, Flex, Heading } from '@chakra-ui/react';
 import Link from 'next/link';
+import { User } from '../types/user.type';
 import ThemeToggle from './ThemeToggle';
 
-const Header: React.FC<any> = ({ user }) => {
+interface Props {
+  user: User;
+}
+
+const Header: React.FC<Props> = ({ user }: Props) => {
   return (
     <>
       <Flex pb="30px">
@@ -11,7 +16,7 @@ const Header: React.FC<any> = ({ user }) => {
           <ThemeToggle />
           {user ? (
             <Link href="">
-              <Button>{user.body.display_name}</Button>
+              <Button>{user.display_name}</Button>
             </Link>
           ) : (
             <Link href="/api/auth/login">

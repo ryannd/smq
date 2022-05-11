@@ -9,15 +9,18 @@ import {
 } from '@chakra-ui/react';
 import { NextPage } from 'next';
 import useSWR from 'swr';
+import { User } from '../types/user.type';
 import fetcher from '../utils/fetcher';
-
+interface IsLoggedInProps {
+  user: User;
+}
 const Home: NextPage = () => {
   const { data } = useSWR('/api/user/me', fetcher);
 
   return (
     <>
       <Center w="100%" h="100%">
-        {data ? <IsLoggedIn user={data} /> : <NotLoggedIn />}
+        {data ? <IsLoggedIn user={data.body} /> : <NotLoggedIn />}
       </Center>
     </>
   );
@@ -37,12 +40,12 @@ const NotLoggedIn: React.FC = () => {
   );
 };
 
-const IsLoggedIn: React.FC<any> = ({ user }) => {
+const IsLoggedIn: React.FC<IsLoggedInProps> = ({ user }: IsLoggedInProps) => {
   return (
     <>
       <Stack align="center">
         <Heading mb="20px">
-          hewwo {user.body.display_name.toLowerCase()}! sewect an option bewow.
+          hewwo {user.display_name.toLowerCase()}! sewect an option bewow.
         </Heading>
         <Flex>
           <Link href="/api/socketio/create">
