@@ -40,22 +40,22 @@ export class UserService {
       if (reqTime <= expiresAt) {
         console.log('Token still valid.');
         this.spotifyClient.setAccessToken(accessToken);
+      } else {
+        console.log('Tokens expired. Refreshing...');
+        this.spotifyClient.setRefreshToken(refreshToken);
+
+        const newAccessToken = await this.spotifyClient
+          .refreshAccessToken()
+          .then((data) => {
+            this.spotifyClient.setAccessToken(data.body.access_token);
+            return data.body.access_token;
+          });
+
+        await this.userModel.findOneAndUpdate(
+          { id },
+          { accessToken: newAccessToken },
+        );
       }
-
-      console.log('Tokens expired. Refreshing...');
-      this.spotifyClient.setRefreshToken(refreshToken);
-
-      const newAccessToken = await this.spotifyClient
-        .refreshAccessToken()
-        .then((data) => {
-          this.spotifyClient.setAccessToken(data.body.access_token);
-          return data.body.access_token;
-        });
-
-      await this.userModel.findOneAndUpdate(
-        { id },
-        { accessToken: newAccessToken },
-      );
     } else {
       throw new HttpException('User does not exist.', HttpStatus.BAD_REQUEST);
     }
