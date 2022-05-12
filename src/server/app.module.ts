@@ -10,7 +10,9 @@ import { TracksModule } from './modules/tracks/tracks.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost/smq'),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI || 'mongodb://localhost/smq',
+    ),
     AuthModule,
     UserModule,
     SpotifyModule,
