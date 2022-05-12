@@ -54,11 +54,12 @@ export class AppGateway
   startTimer(@MessageBody('id') id: string) {
     this.server.to(id).emit('gameTimerStart');
     const io = this.server;
-    let count = 10;
+    let count = 5;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
       if (count === 0) {
         clearInterval(countdown);
+        io.to(id).emit('startAll');
       }
       count--;
     }, 1000);
@@ -66,7 +67,20 @@ export class AppGateway
 
   @SubscribeMessage('newSong')
   changeSong(@MessageBody('song') song: any, @MessageBody('id') id: string) {
+    let count = 29;
+    const io = this.server;
+    this.logger.log('New song.');
     this.server.to(id).emit('changeSong', song);
+    io.to(id).emit('roundStartTick', 30);
+    const countdown = setInterval(function () {
+      io.to(id).emit('roundStartTick', count);
+      if (count === 0) {
+        clearInterval(countdown);
+        io.to(id).emit('roundDone');
+        io.to(id).emit('showTitle');
+      }
+      count--;
+    }, 1000);
   }
 
   afterInit(server: Server) {

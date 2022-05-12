@@ -24,6 +24,7 @@ const SocketIo: NextPage = () => {
     socketIo.on('topTracks', async (s) => {
       console.log('Recieved top tracks message.');
       setGameType('topTracks');
+      setTracks({});
       const data = await fetcher('/api/tracks/top');
       data.forEach((track) => {
         addItem(track);
@@ -42,9 +43,6 @@ const SocketIo: NextPage = () => {
 
     socketIo.on('timerStartTick', (s) => {
       setStartTime(s);
-      if (s === 0) {
-        setShowGame(true);
-      }
     });
 
     socketIo.on('changeSong', (s) => {
@@ -54,6 +52,10 @@ const SocketIo: NextPage = () => {
         delete newTracks[s.name];
         return newTracks;
       });
+    });
+
+    socketIo.on('startAll', (s) => {
+      setShowGame(true);
     });
   }, [id]);
 
