@@ -50,6 +50,25 @@ export class AppGateway
     this.server.to(id).emit('tracks', data);
   }
 
+  @SubscribeMessage('startGame')
+  startTimer(@MessageBody('id') id: string) {
+    this.server.to(id).emit('gameTimerStart');
+    const io = this.server;
+    let count = 10;
+    const countdown = setInterval(function () {
+      io.to(id).emit('timerStartTick', count);
+      if (count === 0) {
+        clearInterval(countdown);
+      }
+      count--;
+    }, 1000);
+  }
+
+  @SubscribeMessage('newSong')
+  changeSong(@MessageBody('song') song: any, @MessageBody('id') id: string) {
+    this.server.to(id).emit('changeSong', song);
+  }
+
   afterInit(server: Server) {
     this.logger.log('Init');
   }
