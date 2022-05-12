@@ -10,7 +10,8 @@
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "downlevelIteration": true
   },
   "include": ["src/server/**/*.ts"]
 }

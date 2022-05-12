@@ -19,11 +19,9 @@ const Layout: React.FC<Props> = ({ children }: Props) => {
     return child;
   });
 
-  if (!user) return <></>;
-
   return (
     <Flex alignContent="center" p="30px" flexDir="column" w="100vw" h="100vh">
-      <Header user={user.body} />
+      <Header user={user} />
       <Center justifySelf="center" w="100%" h="100%">
         {childrenWithUser}
       </Center>
