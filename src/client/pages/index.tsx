@@ -48,7 +48,7 @@ const IsLoggedIn: React.FC<IsLoggedInProps> = ({ user }: IsLoggedInProps) => {
           hewwo {user.display_name.toLowerCase()}! sewect an option bewow.
         </Heading>
         <Flex>
-          <Link href="/api/socketio/create">
+          <Link href={`/room/host`}>
             <Button mr="30px">cweate a woom</Button>
           </Link>
           <Button>join a woom</Button>

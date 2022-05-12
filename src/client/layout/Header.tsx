@@ -4,7 +4,9 @@ import { User } from '../types/user.type';
 import ThemeToggle from './ThemeToggle';
 
 interface Props {
-  user: User;
+  user: {
+    body: User;
+  };
 }
 
 const Header: React.FC<Props> = ({ user }: Props) => {
@@ -16,7 +18,7 @@ const Header: React.FC<Props> = ({ user }: Props) => {
           <ThemeToggle />
           {user ? (
             <Link href="">
-              <Button>{user.display_name}</Button>
+              <Button>{user.body.display_name}</Button>
             </Link>
           ) : (
             <Link href="/api/auth/login">
