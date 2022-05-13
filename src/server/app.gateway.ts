@@ -72,11 +72,12 @@ export class AppGateway
 
   @SubscribeMessage('newSong')
   changeSong(@MessageBody('song') song: any, @MessageBody('id') id: string) {
-    let count = 29;
+    let count = 19;
     const io = this.server;
     this.logger.log('New song.');
     this.server.to(id).emit('changeSong', song);
-    io.to(id).emit('roundStartTick', 30);
+    this.server.to(id).emit('newRound');
+    io.to(id).emit('roundStartTick', 20);
     const countdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
       if (count === 0) {

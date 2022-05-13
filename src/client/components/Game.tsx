@@ -7,7 +7,7 @@ import 'react-h5-audio-player/lib/styles.css';
 const Game = ({ currentSong, allTracks, socket }) => {
   const [trackFill, setTrackFill] = useState<any>();
   const [openMenu, setOpenMenu] = useState(false);
-  const [gameTime, setGameTime] = useState(30);
+  const [gameTime, setGameTime] = useState(20);
   const [showTitle, setShowTitle] = useState(false);
   const [answer, setAnswer] = useState('');
   const [answerSave, setAnswerSave] = useState('');
@@ -23,15 +23,13 @@ const Game = ({ currentSong, allTracks, socket }) => {
       setGameTime(s);
     });
     socket.on('showTitle', () => {
-      console.log('CHANGE');
       setShowTitle(true);
     });
-
-    socket.on('changeSong', (s) => {
+    socket.on('newRound', (s) => {
       setShowTitle(false);
       setAnswer('');
       setAnswerSave('');
-      setGameTime(30);
+      setGameTime(20);
     });
   }, [socket]);
   const AnswerCheck = () => {

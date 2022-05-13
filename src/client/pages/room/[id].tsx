@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
-import Game from '~client/components/Game';
+import Game from '../../components/Game';
 
 const strings = {
   topTracks: 'Top Tracks',

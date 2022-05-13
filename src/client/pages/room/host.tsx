@@ -2,7 +2,7 @@ import { Box, Button, Heading, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
-import Game from '~client/components/Game';
+import Game from '../../components/Game';
 
 const strings = {
   topTracks: 'Top Tracks',
@@ -19,12 +19,17 @@ const SocketIo: any = ({ user }) => {
   const [randomRoom, setRandomRoom] = useState(
     (Math.random() + 1).toString(36).substring(7),
   );
+
+  useEffect(() => {
+    const socketIo = io();
+    setSocket(socketIo);
+  }, []);
+
   useEffect(() => {
     if (!randomRoom) return;
     if (!user) return;
-    const socketIo = io();
-    setSocket(socketIo);
-    socketIo.emit('joinRoom', {
+    if (!socket) return;
+    socket.emit('joinRoom', {
       id: randomRoom,
       user: {
         name: user.body.display_name,
@@ -33,7 +38,7 @@ const SocketIo: any = ({ user }) => {
       },
     });
 
-    socketIo.on('tracks', async (s) => {
+    socket.on('tracks', async (s) => {
       console.log('Recieved tracks.');
       if (s.length > 0) {
         s.forEach((track) => {
@@ -42,30 +47,31 @@ const SocketIo: any = ({ user }) => {
       }
     });
 
-    socketIo.on('timerStartTick', (s) => {
+    socket.on('timerStartTick', (s) => {
       setStartTime(s);
     });
 
-    socketIo.on('playerJoined', (s) => {
+    socket.on('playerJoined', (s) => {
       console.log(s);
     });
-  }, [randomRoom, user]);
+  }, [randomRoom, user, socket]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.off('roundDone');
     socket.off('startAll');
     socket.off('changeSong');
+    socket.off('roundDone');
 
     socket.on('startAll', (s) => {
       setGameState('game');
-      getRandomSong();
+      const next = getRandomSong();
+      socket.emit('newSong', { song: next, id: randomRoom });
     });
 
     socket.on('roundDone', () => {
       setTimeout(() => {
-        console.log('TIMEOUT');
-        getRandomSong();
+        const next = getRandomSong();
+        socket.emit('newSong', { song: next, id: randomRoom });
       }, 5000);
     });
 
@@ -101,13 +107,13 @@ const SocketIo: any = ({ user }) => {
     const keys = Object.keys(tracks);
     const index = Math.floor(Math.random() * keys.length);
     const randomKey = keys[index];
-
-    socket.emit('newSong', { song: tracks[randomKey], id: randomRoom });
+    const nextSong = tracks[randomKey];
     setTracks((prev) => {
       const newTracks = Object.assign({}, prev);
       delete newTracks[randomKey];
       return newTracks;
     });
+    return nextSong;
   };
 
   const startGame = async () => {
