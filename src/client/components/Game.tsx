@@ -9,12 +9,12 @@ const Game = ({ currentSong, allTracks, socket }) => {
   const [openMenu, setOpenMenu] = useState(false);
   const [gameTime, setGameTime] = useState(30);
   const [showTitle, setShowTitle] = useState(true);
+  const [answer, setAnswer] = useState('');
+  const [answerSave, setAnswerSave] = useState('');
   useEffect(() => {
     setTrackFill(
       Object.keys(allTracks).map((t) => ({ value: t.toLowerCase(), label: t })),
     );
-    console.log(allTracks);
-    console.log(trackFill);
   }, [allTracks]);
 
   useEffect(() => {
@@ -23,23 +23,33 @@ const Game = ({ currentSong, allTracks, socket }) => {
       setGameTime(s);
     });
     socket.on('showTitle', () => {
-      console.log('HERE');
       setShowTitle(true);
     });
 
     socket.on('changeSong', (s) => {
       setShowTitle(false);
+      setAnswer('');
+      setAnswerSave('');
       setGameTime(30);
     });
   }, [socket]);
-
+  const AnswerCheck = () => {
+    console.log(answerSave);
+    console.log(currentSong.name);
+    return answerSave === currentSong.name ? (
+      <Heading>CORRECT!</Heading>
+    ) : (
+      <Heading>WRONG!</Heading>
+    );
+  };
   return (
     <>
       {currentSong && (
-        <Box>
+        <Box w="75%">
           {showTitle && (
             <>
               <Heading>{currentSong.name}</Heading>
+              <AnswerCheck />
             </>
           )}
           <Heading>{gameTime}</Heading>
@@ -55,19 +65,27 @@ const Game = ({ currentSong, allTracks, socket }) => {
           />
           <Select
             options={trackFill}
-            isClearable
             isSearchable
+            value={answer}
+            inputValue={answer}
+            placeholder={answerSave}
             onInputChange={(input) => {
+              setAnswer(input);
               if (input && input.length > 2) {
                 setOpenMenu(true);
               } else {
                 setOpenMenu(false);
               }
             }}
-            components={{
-              DropdownIndicator: () => null, // Remove dropdown icon
-              IndicatorSeparator: () => null, // Remove separator
+            onChange={({ value, label }) => {
+              setAnswer(value);
+              setAnswerSave(label);
             }}
+            components={{
+              DropdownIndicator: () => null,
+              IndicatorSeparator: () => null,
+            }}
+            blurInputOnSelect
             menuIsOpen={openMenu}
           />
         </Box>
