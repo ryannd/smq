@@ -77,7 +77,7 @@ const Game = ({ currentSong, allTracks, socket }) => {
                 setOpenMenu(false);
               }
             }}
-            onChange={({ value, label }) => {
+            onChange={({ value, label }: any) => {
               setAnswer(value);
               setAnswerSave(label);
             }}
