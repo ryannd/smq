@@ -1,6 +1,6 @@
 import { Box, Heading } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import AudioPlayer from 'react-h5-audio-player';
+import AudioPlayer, { RHAP_UI } from 'react-h5-audio-player';
 import { Select } from 'chakra-react-select';
 import 'react-h5-audio-player/lib/styles.css';
 
@@ -62,6 +62,7 @@ const Game = ({ currentSong, allTracks, socket }) => {
             showDownloadProgress={false}
             showJumpControls={false}
             customControlsSection={[]}
+            customProgressBarSection={[RHAP_UI.PROGRESS_BAR]}
           />
           <Select
             options={trackFill}

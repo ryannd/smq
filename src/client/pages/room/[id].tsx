@@ -4,12 +4,13 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
-import AudioPlayer from 'react-h5-audio-player';
-import 'react-h5-audio-player/lib/styles.css';
+import Game from '~client/components/Game';
 
 const SocketIo: NextPage = () => {
   const router = useRouter();
   const [gameType, setGameType] = useState('topTracks');
+  const [socket, setSocket] = useState(null);
+  const [allTracks, setAllTracks] = useState({});
   const [tracks, setTracks] = useState({});
   const [startTime, setStartTime] = useState(10);
   const [showGame, setShowGame] = useState(false);
@@ -17,8 +18,23 @@ const SocketIo: NextPage = () => {
   const { id } = router.query;
 
   useEffect(() => {
+    if (!socket) return;
+    socket.off('roundDone');
+    socket.off('startAll');
+
+    socket.on('startAll', (s) => {
+      setShowGame(true);
+    });
+
+    socket.on('changeSong', (s) => {
+      setCurrentSong(s);
+    });
+  }, [socket]);
+
+  useEffect(() => {
     if (!id) return;
     const socketIo = io();
+    setSocket(socketIo);
     socketIo.emit('joinRoom', { id });
 
     socketIo.on('topTracks', async (s) => {
@@ -66,29 +82,22 @@ const SocketIo: NextPage = () => {
       newTracks[item.name] = item;
       return newTracks;
     });
+    setAllTracks((prev) => {
+      const newTracks = Object.assign({}, prev);
+      newTracks[item.name] = item;
+      return newTracks;
+    });
   };
 
   return (
     <>
       {showGame ? (
         <>
-          <Heading>{currentSong !== undefined ? currentSong.name : ''}</Heading>
-          <AudioPlayer
-            src={currentSong !== undefined ? currentSong.preview_url : ''}
-            volume={0.1}
-            autoPlay
-            customVolumeControls={[]}
-            customAdditionalControls={[]}
-            showDownloadProgress={false}
-            showJumpControls={false}
-            customControlsSection={[]}
+          <Game
+            currentSong={currentSong}
+            allTracks={allTracks}
+            socket={socket}
           />
-          <Stack>
-            {Object.keys(tracks).map((track, i) => {
-              const currTrack = tracks[track];
-              return <p key={i}>{currTrack.name}</p>;
-            })}
-          </Stack>
         </>
       ) : (
         <>
