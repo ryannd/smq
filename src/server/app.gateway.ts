@@ -12,6 +12,7 @@ import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
 
 const rooms = {};
+const roomUser = {};
 
 @WebSocketGateway({
   cors: {
@@ -27,13 +28,28 @@ export class AppGateway
   @SubscribeMessage('joinRoom')
   async createRoom(
     @MessageBody('id') id: string,
-    @MessageBody('name') name: string,
+    @MessageBody('user') user: any,
     @ConnectedSocket()
     client: Socket,
   ) {
     this.logger.log(id);
     await client.join(id);
-    this.server.to(id).emit('playerJoined', { name });
+    const newUser = {
+      user,
+      score: 0,
+      id: client.id,
+    };
+    if (roomUser[id] == undefined) {
+      roomUser[id] = {};
+    }
+    if (rooms[id] == undefined) {
+      rooms[id] = [];
+    }
+    if (roomUser[id][client.id] !== true) {
+      rooms[id].push(newUser);
+      roomUser[id][client.id] = true;
+      this.server.to(id).emit('playerJoined', rooms[id]);
+    }
   }
 
   @SubscribeMessage('hostTopTracks')
@@ -89,13 +105,28 @@ export class AppGateway
     }, 1000);
   }
 
+  @SubscribeMessage('roundAnswer')
+  savePoints(
+    @MessageBody('user') user,
+    @MessageBody('id') id: string,
+    @MessageBody('answer') answer,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const found = rooms[id].findIndex((element) => element.id == client.id);
+    const score = rooms[id][found].score + (answer ? 10 : 0);
+    const updatedUser = { user, score, id: rooms[id][found].id };
+    console.log(answer);
+    console.log(rooms[id][found]);
+    rooms[id][found] = updatedUser;
+    this.server.to(id).emit('updateScore', rooms[id]);
+  }
+
   afterInit(server: Server) {
     this.logger.log('Init');
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
-    console.log(Object.keys(client.rooms));
   }
 
   handleConnection(client: Socket, ...args: any[]) {

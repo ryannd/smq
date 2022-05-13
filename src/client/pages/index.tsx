@@ -26,7 +26,7 @@ const Home: NextPage = () => {
   );
 };
 
-const NotLoggedIn: React.FC = () => {
+export const NotLoggedIn: React.FC = () => {
   return (
     <>
       <Stack align="center">

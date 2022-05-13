@@ -1,25 +1,36 @@
-import { Box, Heading } from '@chakra-ui/react';
+import { Box, Flex, Heading } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
 import Game from '../../components/Game';
+import SocialProfileWithImage from '~client/components/UserCard';
 
 const strings = {
   topTracks: 'Top Tracks',
 };
 
-const SocketIo: any = ({ user }) => {
+const NonHost: any = ({ user }) => {
   const router = useRouter();
   const [gameType, setGameType] = useState('topTracks');
   const [socket, setSocket] = useState(null);
   const [allTracks, setAllTracks] = useState({});
   const [tracks, setTracks] = useState({});
   const [startTime, setStartTime] = useState(10);
-  const [showGame, setShowGame] = useState(false);
   const [currentSong, setCurrentSong] = useState<any>();
+  const [users, setUsers] = useState([]);
   const [gameState, setGameState] = useState('wait');
   const { id } = router.query;
+
+  useEffect(() => {
+    const socketIo = io();
+    setSocket(socketIo);
+    socketIo.on('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
@@ -35,17 +46,32 @@ const SocketIo: any = ({ user }) => {
     });
 
     socket.on('playerJoined', (s) => {
-      console.log(s);
+      if (s.length > users.length) {
+        setUsers((prev) => {
+          return [...s];
+        });
+      }
     });
   }, [socket]);
 
   useEffect(() => {
     if (!id) return;
-    const socketIo = io();
-    setSocket(socketIo);
-    socketIo.emit('joinRoom', { id });
-
-    socketIo.on('topTracks', async (s) => {
+    if (!user) return;
+    if (!socket) return;
+    socket.emit('joinRoom', {
+      id,
+      user: {
+        name: user.body.display_name,
+        pic: user.body.images[0] || null,
+        url: user.body.external_urls.spotify,
+      },
+    });
+    socket.emit('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
+    socket.on('topTracks', async (s) => {
       console.log('Recieved top tracks message.');
       setGameType('topTracks');
       setTracks({});
@@ -53,10 +79,10 @@ const SocketIo: any = ({ user }) => {
       data.forEach((track) => {
         addItem(track);
       });
-      socketIo.emit('tracks', { id, data });
+      socket.emit('tracks', { id, data });
     });
 
-    socketIo.on('tracks', async (s) => {
+    socket.on('tracks', async (s) => {
       console.log('Recieved tracks.');
       if (s.length > 0) {
         s.forEach((track) => {
@@ -65,12 +91,12 @@ const SocketIo: any = ({ user }) => {
       }
     });
 
-    socketIo.on('timerStartTick', (s) => {
+    socket.on('timerStartTick', (s) => {
       setGameState('prep');
       setStartTime(s);
     });
 
-    socketIo.on('changeSong', (s) => {
+    socket.on('changeSong', (s) => {
       if (s !== null) {
         setGameState('game');
         console.log(s);
@@ -83,11 +109,10 @@ const SocketIo: any = ({ user }) => {
       }
     });
 
-    socketIo.on('startAll', (s) => {
+    socket.on('startAll', (s) => {
       setGameState('game');
-      setShowGame(true);
     });
-  }, [id]);
+  }, [id, user]);
 
   const addItem = (item) => {
     if (tracks[item.name] !== undefined) return;
@@ -113,6 +138,8 @@ const SocketIo: any = ({ user }) => {
             currentSong={currentSong}
             allTracks={allTracks}
             socket={socket}
+            user={user}
+            id={id}
           />
         );
       case 'wait':
@@ -125,7 +152,26 @@ const SocketIo: any = ({ user }) => {
     }
   };
 
-  return <>{content()}</>;
+  return (
+    <>
+      <Flex
+        textAlign="center"
+        height="100%"
+        flexDir="column"
+        justifyContent="space-between"
+      >
+        {content()}
+        <Box>
+          <Flex justifyContent="center" alignItems="center" mt={10} gap={5}>
+            {users !== undefined &&
+              users.map((user) => {
+                return <SocialProfileWithImage user={user} />;
+              })}
+          </Flex>
+        </Box>
+      </Flex>
+    </>
+  );
 };
 
-export default SocketIo;
+export default NonHost;

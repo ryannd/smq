@@ -1,14 +1,15 @@
-import { Box, Button, Heading, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
 import Game from '../../components/Game';
+import SocialProfileWithImage from '~client/components/UserCard';
 
 const strings = {
   topTracks: 'Top Tracks',
 };
 
-const SocketIo: any = ({ user }) => {
+const Host: any = ({ user }) => {
   const [socket, setSocket] = useState(null);
   const [gameType, setGameType] = useState('topTracks');
   const [tracks, setTracks] = useState({});
@@ -16,6 +17,7 @@ const SocketIo: any = ({ user }) => {
   const [startTime, setStartTime] = useState(5);
   const [gameState, setGameState] = useState('select');
   const [currentSong, setCurrentSong] = useState<any>();
+  const [users, setUsers] = useState([]);
   const [randomRoom, setRandomRoom] = useState(
     (Math.random() + 1).toString(36).substring(7),
   );
@@ -23,6 +25,11 @@ const SocketIo: any = ({ user }) => {
   useEffect(() => {
     const socketIo = io();
     setSocket(socketIo);
+    socketIo.on('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
   }, []);
 
   useEffect(() => {
@@ -36,6 +43,12 @@ const SocketIo: any = ({ user }) => {
         pic: user.body.images[0] || null,
         url: user.body.external_urls.spotify,
       },
+    });
+
+    socket.emit('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
     });
 
     socket.on('tracks', async (s) => {
@@ -53,6 +66,11 @@ const SocketIo: any = ({ user }) => {
 
     socket.on('playerJoined', (s) => {
       console.log(s);
+      if (s.length > users.length) {
+        setUsers((prev) => {
+          return [...s];
+        });
+      }
     });
   }, [randomRoom, user, socket]);
 
@@ -158,12 +176,33 @@ const SocketIo: any = ({ user }) => {
             currentSong={currentSong}
             allTracks={allTracks}
             socket={socket}
+            user={user}
+            id={randomRoom}
           />
         );
     }
   };
 
-  return <>{content()}</>;
+  return (
+    <>
+      <Flex
+        textAlign="center"
+        height="100%"
+        flexDir="column"
+        justifyContent="space-between"
+      >
+        {content()}
+        <Box>
+          <Flex justifyContent="center" alignItems="center" mt={10} gap={6}>
+            {users !== undefined &&
+              users.map((user) => {
+                return <SocialProfileWithImage user={user} />;
+              })}
+          </Flex>
+        </Box>
+      </Flex>
+    </>
+  );
 };
 
-export default SocketIo;
+export default Host;

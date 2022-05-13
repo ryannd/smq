@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@chakra-ui/react": "^1.8.8",
-    "@emotion/react": "^11",
     "@emotion/styled": "^11",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^2.0.0",
