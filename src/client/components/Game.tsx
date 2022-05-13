@@ -42,12 +42,12 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setGameTime(s);
     });
     socket.on('showTitle', () => {
+      setPoints(answerSave === currentSong.name);
       setShowTitle(true);
     });
   }, [socket, currentSong, answerSave]);
 
   const AnswerCheck = () => {
-    setPoints(answerSave === currentSong.name);
     return answerSave === currentSong.name ? (
       <Badge ml="1" fontSize="0.8em" colorScheme="green">
         CORRECT
@@ -61,7 +61,14 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   return (
     <>
       {currentSong && (
-        <Box w="100%" textAlign="center">
+        <Box
+          w="100%"
+          textAlign="center"
+          justifyContent="center"
+          alignItems="center"
+          display="flex"
+          flexDir="column"
+        >
           <Heading
             position={['static', 'fixed']}
             left="30px"
@@ -80,7 +87,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               <Image
                 boxSize="300px"
                 borderTopRadius="10px"
-                w="100%"
+                w="640px"
                 objectFit="cover"
                 src={currentSong.images[0].url}
                 alt="Dan Abramov"
@@ -97,18 +104,20 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               alt="Blank album cover"
             />
           )}
-          <AudioPlayer
-            src={currentSong.preview_url}
-            volume={0.1}
-            autoPlay
-            customVolumeControls={[]}
-            customAdditionalControls={[]}
-            showDownloadProgress={false}
-            showJumpControls={false}
-            customControlsSection={[]}
-            customProgressBarSection={[RHAP_UI.PROGRESS_BAR]}
-          />
-          <Box mt="20px">
+          <Box w="640px">
+            <AudioPlayer
+              src={currentSong.preview_url}
+              volume={0.1}
+              autoPlay
+              customVolumeControls={[]}
+              customAdditionalControls={[]}
+              showDownloadProgress={false}
+              showJumpControls={false}
+              customControlsSection={[]}
+              customProgressBarSection={[RHAP_UI.PROGRESS_BAR]}
+            />
+          </Box>
+          <Box mt="20px" w="640px">
             <Select
               options={trackFill}
               isSearchable
