@@ -37,6 +37,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       });
       setAnswer('');
       setAnswerSave('');
+      setPoints((p) => false);
       setGameTime(20);
     });
     socket.on('roundStartTick', (s) => {
