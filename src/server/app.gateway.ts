@@ -11,6 +11,8 @@ import {
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
 
+const rooms = {};
+
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -25,10 +27,13 @@ export class AppGateway
   @SubscribeMessage('joinRoom')
   async createRoom(
     @MessageBody('id') id: string,
-    @ConnectedSocket() client: Socket,
+    @MessageBody('name') name: string,
+    @ConnectedSocket()
+    client: Socket,
   ) {
     this.logger.log(id);
     await client.join(id);
+    this.server.to(id).emit('playerJoined', { name });
   }
 
   @SubscribeMessage('hostTopTracks')

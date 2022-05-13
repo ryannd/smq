@@ -51,7 +51,9 @@ const IsLoggedIn: React.FC<IsLoggedInProps> = ({ user }: IsLoggedInProps) => {
           <Link href={`/room/host`}>
             <Button mr="30px">cweate a woom</Button>
           </Link>
-          <Button>join a woom</Button>
+          <Link href={'/room/join'}>
+            <Button>join a woom</Button>
+          </Link>
         </Flex>
       </Stack>
     </>

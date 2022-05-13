@@ -1,12 +1,15 @@
-import { Heading, Stack } from '@chakra-ui/react';
-import { NextPage } from 'next';
+import { Box, Heading } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
 import Game from '~client/components/Game';
 
-const SocketIo: NextPage = () => {
+const strings = {
+  topTracks: 'Top Tracks',
+};
+
+const SocketIo: any = ({ user }) => {
   const router = useRouter();
   const [gameType, setGameType] = useState('topTracks');
   const [socket, setSocket] = useState(null);
@@ -15,6 +18,7 @@ const SocketIo: NextPage = () => {
   const [startTime, setStartTime] = useState(10);
   const [showGame, setShowGame] = useState(false);
   const [currentSong, setCurrentSong] = useState<any>();
+  const [gameState, setGameState] = useState('wait');
   const { id } = router.query;
 
   useEffect(() => {
@@ -23,11 +27,15 @@ const SocketIo: NextPage = () => {
     socket.off('startAll');
 
     socket.on('startAll', (s) => {
-      setShowGame(true);
+      setGameState('game');
     });
 
     socket.on('changeSong', (s) => {
       setCurrentSong(s);
+    });
+
+    socket.on('playerJoined', (s) => {
+      console.log(s);
     });
   }, [socket]);
 
@@ -58,19 +66,25 @@ const SocketIo: NextPage = () => {
     });
 
     socketIo.on('timerStartTick', (s) => {
+      setGameState('prep');
       setStartTime(s);
     });
 
     socketIo.on('changeSong', (s) => {
-      setCurrentSong(s);
-      setTracks((prev) => {
-        const newTracks = Object.assign({}, prev);
-        delete newTracks[s.name];
-        return newTracks;
-      });
+      if (s !== null) {
+        setGameState('game');
+        console.log(s);
+        setCurrentSong(s);
+        setTracks((prev) => {
+          const newTracks = Object.assign({}, prev);
+          delete newTracks[s.name];
+          return newTracks;
+        });
+      }
     });
 
     socketIo.on('startAll', (s) => {
+      setGameState('game');
       setShowGame(true);
     });
   }, [id]);
@@ -89,30 +103,29 @@ const SocketIo: NextPage = () => {
     });
   };
 
-  return (
-    <>
-      {showGame ? (
-        <>
+  const content = () => {
+    switch (gameState) {
+      case 'prep':
+        return <Heading>{startTime}</Heading>;
+      case 'game':
+        return (
           <Game
             currentSong={currentSong}
             allTracks={allTracks}
             socket={socket}
           />
-        </>
-      ) : (
-        <>
-          <Heading>{startTime}</Heading>
-          <Heading>{gameType}</Heading>
-          <Stack>
-            {Object.keys(tracks).map((track, i) => {
-              const currTrack = tracks[track];
-              return <p key={i}>{currTrack.name}</p>;
-            })}
-          </Stack>
-        </>
-      )}
-    </>
-  );
+        );
+      case 'wait':
+        return (
+          <Box textAlign="center">
+            <Heading>Current mode: {strings[gameType]}</Heading>
+            <Heading pt="10px">Room Code: {id}</Heading>
+          </Box>
+        );
+    }
+  };
+
+  return <>{content()}</>;
 };
 
 export default SocketIo;

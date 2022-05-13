@@ -24,6 +24,8 @@ export class TracksService {
           track_number,
           type,
           uri,
+          album: { images },
+          artists,
         } = track;
         return {
           href,
@@ -35,6 +37,8 @@ export class TracksService {
           track_number,
           type,
           uri,
+          images,
+          artists,
         };
       });
     });
