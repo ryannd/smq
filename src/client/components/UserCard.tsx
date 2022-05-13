@@ -20,13 +20,7 @@ export default function SocialProfileWithImage({ user }) {
         p={6}
         textAlign={'center'}
       >
-        <Avatar
-          size={'xl'}
-          src={user.user.pic.url}
-          alt={'Avatar Alt'}
-          mb={4}
-          pos={'relative'}
-        />
+        <Avatar size={'xl'} src={user.user.pic.url} mb={4} pos={'relative'} />
         <Heading fontSize={'2xl'} fontFamily={'body'}>
           {user.user.name}
         </Heading>
