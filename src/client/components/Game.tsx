@@ -21,10 +21,9 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   useEffect(() => {
     if (!socket) return;
     socket.off('newRound');
-    socket.off('showTitle');
+
     socket.on('newRound', (s) => {
       setShowTitle(false);
-      console.log(points);
       socket.emit('roundAnswer', {
         user: {
           name: user.body.display_name,
@@ -45,7 +44,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setPoints(answerSave === currentSong.name);
       setShowTitle(true);
     });
-  }, [socket, currentSong, answerSave]);
+  }, [socket, points, answerSave]);
 
   const AnswerCheck = () => {
     return answerSave === currentSong.name ? (
