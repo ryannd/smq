@@ -21,8 +21,10 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   useEffect(() => {
     if (!socket) return;
     socket.off('newRound');
+    socket.off('showTitle');
 
     socket.on('newRound', (s) => {
+      console.log(points);
       setShowTitle(false);
       socket.emit('roundAnswer', {
         user: {
@@ -41,7 +43,6 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setGameTime(s);
     });
     socket.on('showTitle', () => {
-      setPoints(answerSave === currentSong.name);
       setShowTitle(true);
     });
   }, [socket, points, answerSave]);
@@ -134,6 +135,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               onChange={({ value, label }: any) => {
                 setAnswer(value);
                 setAnswerSave(label);
+                setPoints((p) => label === currentSong.name);
               }}
               components={{
                 DropdownIndicator: () => null,
