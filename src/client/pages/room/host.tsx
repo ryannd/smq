@@ -40,7 +40,7 @@ const Host: any = ({ user }) => {
       id: randomRoom,
       user: {
         name: user.body.display_name,
-        pic: user.body.images[0] || null,
+        pic: user.body.images[0] || undefined,
         url: user.body.external_urls.spotify,
         id: user.body.id,
       },
