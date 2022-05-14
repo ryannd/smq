@@ -14,7 +14,7 @@ import { Socket, Server } from 'socket.io';
 const rooms = {};
 const roomUser = {};
 const roomHosts = {};
-
+const socketToSpot = {};
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -78,6 +78,7 @@ export class AppGateway
       rooms[id].push(newUser);
       roomUser[id][user.id] = true;
     }
+    socketToSpot[client.id] = user.id;
     this.server.to(id).emit('playerJoined', rooms[id]);
   }
 
@@ -151,12 +152,19 @@ export class AppGateway
   }
 
   handleDisconnect(client: Socket) {
-    if (roomHosts[client.id] !== undefined) {
-      const room = roomHosts[client.id];
+    const spotify = socketToSpot[client.id];
+    console.log(roomHosts);
+    console.log(rooms);
+    console.log(roomUser);
+    if (roomHosts[spotify] !== undefined) {
+      const room = roomHosts[spotify];
       this.server.to(room).emit('hostDisconnect');
-      delete roomHosts[client.id];
+      delete roomHosts[spotify];
       delete rooms[room];
       delete roomUser[room];
+      console.log(roomHosts);
+      console.log(rooms);
+      console.log(roomUser);
     }
     this.logger.log(`Client disconnected: ${client.id}`);
   }
