@@ -42,28 +42,24 @@ const NonHost: any = ({ user }) => {
       setGameState('notExist');
     });
 
-    socket.on(
-      'playerJoined',
-      (s) => {
-        setUsers((prev) => {
-          return [...s];
-        });
-      },
-      [],
-    );
-
-    useEffect(() => {
-      if (!socket) return;
-      socket.off('roundDone');
-      socket.off('startAll');
-
-      socket.on('startAll', (s) => {
-        setGameState('game');
+    socketIo.on('playerJoined', (s) => {
+      setUsers((prev) => {
+        return [...s];
       });
+    });
+  }, []);
 
-      socket.on('changeSong', (s) => {
-        setCurrentSong(s);
-      });
+  useEffect(() => {
+    if (!socket) return;
+    socket.off('roundDone');
+    socket.off('startAll');
+
+    socket.on('startAll', (s) => {
+      setGameState('game');
+    });
+
+    socket.on('changeSong', (s) => {
+      setCurrentSong(s);
     });
   }, [socket]);
 
