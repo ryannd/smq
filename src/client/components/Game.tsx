@@ -24,7 +24,6 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
     socket.off('showTitle');
 
     socket.on('newRound', (s) => {
-      console.log(points);
       setShowTitle(false);
       socket.emit('roundAnswer', {
         user: {
@@ -71,13 +70,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
           display="flex"
           flexDir="column"
         >
-          <Heading
-            position={['static', 'fixed']}
-            left="30px"
-            top="100px"
-            fontSize="2xl"
-            mb={['30px', '0']}
-          >
+          <Heading position={['static']} fontSize="2xl" mb={['30px']}>
             Remaining time: {gameTime}
           </Heading>
           {showTitle ? (

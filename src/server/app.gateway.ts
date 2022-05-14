@@ -15,6 +15,8 @@ const rooms = {};
 const roomUser = {};
 const roomHosts = {};
 const socketToSpot = {};
+
+let countdown;
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -42,15 +44,20 @@ export class AppGateway
         score: 0,
         id: user.id,
       };
-      console.log(roomUser);
-      console.log(rooms);
-      console.log(roomHosts);
       if (roomUser[id][user.id] !== true) {
         rooms[id].push(newUser);
         roomUser[id][user.id] = true;
       }
+      socketToSpot[client.id] = user.id;
       this.server.to(id).emit('playerJoined', rooms[id]);
     }
+  }
+
+  @SubscribeMessage('hostSkip')
+  skipSong(@MessageBody('id') id: string) {
+    this.server.to(id).emit('roundDone');
+    this.server.to(id).emit('showTitle');
+    clearInterval(countdown);
   }
 
   @SubscribeMessage('hostJoinRoom')
@@ -67,7 +74,6 @@ export class AppGateway
       id: user.id,
     };
     roomHosts[user.id] = id;
-    console.log(user.id);
     if (roomUser[id] == undefined) {
       roomUser[id] = {};
     }
@@ -122,7 +128,7 @@ export class AppGateway
     this.server.to(id).emit('changeSong', song);
     this.server.to(id).emit('newRound');
     io.to(id).emit('roundStartTick', 20);
-    const countdown = setInterval(function () {
+    countdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
       if (count === 0) {
         clearInterval(countdown);
@@ -153,18 +159,12 @@ export class AppGateway
 
   handleDisconnect(client: Socket) {
     const spotify = socketToSpot[client.id];
-    console.log(roomHosts);
-    console.log(rooms);
-    console.log(roomUser);
     if (roomHosts[spotify] !== undefined) {
       const room = roomHosts[spotify];
       this.server.to(room).emit('hostDisconnect');
       delete roomHosts[spotify];
       delete rooms[room];
       delete roomUser[room];
-      console.log(roomHosts);
-      console.log(rooms);
-      console.log(roomUser);
     }
     this.logger.log(`Client disconnected: ${client.id}`);
   }
