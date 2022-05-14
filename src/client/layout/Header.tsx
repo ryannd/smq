@@ -13,7 +13,9 @@ const Header: React.FC<Props> = ({ user }: Props) => {
   return (
     <>
       <Flex pb="30px">
-        <Heading>spotify.music.quiz</Heading>
+        <Link href="/">
+          <Heading fontSize={['xl', '4xl']}>spotify.music.quiz</Heading>
+        </Link>
         <Box marginLeft="auto">
           <ThemeToggle />
           {user ? (

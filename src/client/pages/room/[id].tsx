@@ -1,37 +1,95 @@
-import { Heading, Stack } from '@chakra-ui/react';
-import { NextPage } from 'next';
+import { Box, Flex, Heading } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
-import AudioPlayer from 'react-h5-audio-player';
-import 'react-h5-audio-player/lib/styles.css';
+import Game from '../../components/Game';
+import SocialProfileWithImage from '~client/components/UserCard';
 
-const SocketIo: NextPage = () => {
+const strings = {
+  topTracks: 'Top Tracks',
+};
+
+const NonHost: any = ({ user }) => {
   const router = useRouter();
   const [gameType, setGameType] = useState('topTracks');
+  const [socket, setSocket] = useState(null);
+  const [allTracks, setAllTracks] = useState({});
   const [tracks, setTracks] = useState({});
   const [startTime, setStartTime] = useState(10);
-  const [showGame, setShowGame] = useState(false);
   const [currentSong, setCurrentSong] = useState<any>();
+  const [users, setUsers] = useState([]);
+  const [gameState, setGameState] = useState('wait');
   const { id } = router.query;
 
   useEffect(() => {
-    if (!id) return;
     const socketIo = io();
-    socketIo.emit('joinRoom', { id });
+    setSocket(socketIo);
+    socketIo.on('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
+    socketIo.on('hostDisconnect', () => {
+      setGameState('disconnect');
+    });
+    socketIo.on('roomDoesNotExist', () => {
+      setGameState('notExist');
+    });
+  }, []);
 
-    socketIo.on('topTracks', async (s) => {
+  useEffect(() => {
+    if (!socket) return;
+    socket.off('roundDone');
+    socket.off('startAll');
+
+    socket.on('startAll', (s) => {
+      setGameState('game');
+    });
+
+    socket.on('changeSong', (s) => {
+      setCurrentSong(s);
+    });
+
+    socket.on('playerJoined', (s) => {
+      if (s.length > users.length) {
+        setUsers((prev) => {
+          return [...s];
+        });
+      }
+    });
+  }, [socket]);
+
+  useEffect(() => {
+    if (!id) return;
+    if (!user) return;
+    if (!socket) return;
+    socket.emit('joinRoom', {
+      id,
+      user: {
+        name: user.body.display_name,
+        pic: user.body.images[0] || undefined,
+        url: user.body.external_urls.spotify,
+        id: user.body.id,
+      },
+    });
+    socket.emit('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
+    socket.on('topTracks', async (s) => {
       console.log('Recieved top tracks message.');
       setGameType('topTracks');
+      setTracks({});
       const data = await fetcher('/api/tracks/top');
       data.forEach((track) => {
         addItem(track);
       });
-      socketIo.emit('tracks', { id, data });
+      socket.emit('tracks', { id, data });
     });
 
-    socketIo.on('tracks', async (s) => {
+    socket.on('tracks', async (s) => {
       console.log('Recieved tracks.');
       if (s.length > 0) {
         s.forEach((track) => {
@@ -40,22 +98,28 @@ const SocketIo: NextPage = () => {
       }
     });
 
-    socketIo.on('timerStartTick', (s) => {
+    socket.on('timerStartTick', (s) => {
+      setGameState('prep');
       setStartTime(s);
-      if (s === 0) {
-        setShowGame(true);
+    });
+
+    socket.on('changeSong', (s) => {
+      if (s !== null) {
+        setGameState('game');
+
+        setCurrentSong(s);
+        setTracks((prev) => {
+          const newTracks = Object.assign({}, prev);
+          delete newTracks[s.name];
+          return newTracks;
+        });
       }
     });
 
-    socketIo.on('changeSong', (s) => {
-      setCurrentSong(s);
-      setTracks((prev) => {
-        const newTracks = Object.assign({}, prev);
-        delete newTracks[s.name];
-        return newTracks;
-      });
+    socket.on('startAll', (s) => {
+      setGameState('game');
     });
-  }, [id]);
+  }, [id, user]);
 
   const addItem = (item) => {
     if (tracks[item.name] !== undefined) return;
@@ -64,44 +128,61 @@ const SocketIo: NextPage = () => {
       newTracks[item.name] = item;
       return newTracks;
     });
+    setAllTracks((prev) => {
+      const newTracks = Object.assign({}, prev);
+      newTracks[item.name] = item;
+      return newTracks;
+    });
+  };
+
+  const content = () => {
+    switch (gameState) {
+      case 'prep':
+        return <Heading>{startTime}</Heading>;
+      case 'game':
+        return (
+          <Game
+            currentSong={currentSong}
+            allTracks={allTracks}
+            socket={socket}
+            user={user}
+            id={id}
+          />
+        );
+      case 'wait':
+        return (
+          <Box textAlign="center">
+            <Heading>Current mode: {strings[gameType]}</Heading>
+            <Heading pt="10px">Room Code: {id}</Heading>
+          </Box>
+        );
+      case 'disconnect':
+        return <Heading>Host disconnected...</Heading>;
+      case 'notExist':
+        return <Heading>Room does not exist</Heading>;
+    }
   };
 
   return (
     <>
-      {showGame ? (
-        <>
-          <Heading>{currentSong !== undefined ? currentSong.name : ''}</Heading>
-          <AudioPlayer
-            src={currentSong !== undefined ? currentSong.preview_url : ''}
-            volume={0.1}
-            autoPlay
-            customVolumeControls={[]}
-            customAdditionalControls={[]}
-            showDownloadProgress={false}
-            showJumpControls={false}
-            customControlsSection={[]}
-          />
-          <Stack>
-            {Object.keys(tracks).map((track, i) => {
-              const currTrack = tracks[track];
-              return <p key={i}>{currTrack.name}</p>;
-            })}
-          </Stack>
-        </>
-      ) : (
-        <>
-          <Heading>{startTime}</Heading>
-          <Heading>{gameType}</Heading>
-          <Stack>
-            {Object.keys(tracks).map((track, i) => {
-              const currTrack = tracks[track];
-              return <p key={i}>{currTrack.name}</p>;
-            })}
-          </Stack>
-        </>
-      )}
+      <Flex
+        textAlign="center"
+        height="100%"
+        flexDir="column"
+        justifyContent="space-between"
+      >
+        {content()}
+        <Box>
+          <Flex justifyContent="center" alignItems="center" mt={10} gap={5}>
+            {users !== undefined &&
+              users.map((user) => {
+                return <SocialProfileWithImage user={user} />;
+              })}
+          </Flex>
+        </Box>
+      </Flex>
     </>
   );
 };
 
-export default SocketIo;
+export default NonHost;

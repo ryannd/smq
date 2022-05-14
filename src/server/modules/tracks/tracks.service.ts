@@ -13,30 +13,36 @@ export class TracksService {
     await this.userService.setSpotifyUserToken(userId);
 
     const tracks = await this.spotifyService.getMyTopTracks().then((data) => {
-      return data.body.items.map((track) => {
-        const {
-          href,
-          id,
-          is_local,
-          name,
-          popularity,
-          preview_url,
-          track_number,
-          type,
-          uri,
-        } = track;
-        return {
-          href,
-          id,
-          is_local,
-          name,
-          popularity,
-          preview_url,
-          track_number,
-          type,
-          uri,
-        };
-      });
+      return data.body.items
+        .filter((track) => track.preview_url !== null)
+        .map((track) => {
+          const {
+            href,
+            id,
+            is_local,
+            name,
+            popularity,
+            preview_url,
+            track_number,
+            type,
+            uri,
+            album: { images },
+            artists,
+          } = track;
+          return {
+            href,
+            id,
+            is_local,
+            name,
+            popularity,
+            preview_url,
+            track_number,
+            type,
+            uri,
+            images,
+            artists,
+          };
+        });
     });
 
     if (!tracks) {

@@ -11,6 +11,10 @@ import {
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
 
+const rooms = {};
+const roomUser = {};
+const roomHosts = {};
+const socketToSpot = {};
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -23,12 +27,59 @@ export class AppGateway
   private logger: Logger = new Logger('AppGateway');
 
   @SubscribeMessage('joinRoom')
+  async joinRoom(
+    @MessageBody('id') id: string,
+    @MessageBody('user') user: any,
+    @ConnectedSocket()
+    client: Socket,
+  ) {
+    if (rooms[id] == undefined) {
+      this.server.to(client.id).emit('roomDoesNotExist');
+    } else {
+      await client.join(id);
+      const newUser = {
+        user,
+        score: 0,
+        id: user.id,
+      };
+      console.log(roomUser);
+      console.log(rooms);
+      console.log(roomHosts);
+      if (roomUser[id][user.id] !== true) {
+        rooms[id].push(newUser);
+        roomUser[id][user.id] = true;
+      }
+      this.server.to(id).emit('playerJoined', rooms[id]);
+    }
+  }
+
+  @SubscribeMessage('hostJoinRoom')
   async createRoom(
     @MessageBody('id') id: string,
-    @ConnectedSocket() client: Socket,
+    @MessageBody('user') user: any,
+    @ConnectedSocket()
+    client: Socket,
   ) {
-    this.logger.log(id);
     await client.join(id);
+    const newUser = {
+      user,
+      score: 0,
+      id: user.id,
+    };
+    roomHosts[user.id] = id;
+    console.log(user.id);
+    if (roomUser[id] == undefined) {
+      roomUser[id] = {};
+    }
+    if (rooms[id] == undefined) {
+      rooms[id] = [];
+    }
+    if (roomUser[id][user.id] !== true) {
+      rooms[id].push(newUser);
+      roomUser[id][user.id] = true;
+    }
+    socketToSpot[client.id] = user.id;
+    this.server.to(id).emit('playerJoined', rooms[id]);
   }
 
   @SubscribeMessage('hostTopTracks')
@@ -36,7 +87,6 @@ export class AppGateway
     @MessageBody('id') id: string,
     @ConnectedSocket() client: Socket,
   ) {
-    this.logger.log('hostTopTracks message. topTracks message emitted.');
     this.server.to(id).emit('topTracks');
   }
 
@@ -46,7 +96,6 @@ export class AppGateway
     @ConnectedSocket() client: Socket,
     @MessageBody('data') data: any,
   ) {
-    this.logger.log('tracks message emitted.');
     this.server.to(id).emit('tracks', data);
   }
 
@@ -54,11 +103,12 @@ export class AppGateway
   startTimer(@MessageBody('id') id: string) {
     this.server.to(id).emit('gameTimerStart');
     const io = this.server;
-    let count = 10;
+    let count = 5;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
       if (count === 0) {
         clearInterval(countdown);
+        io.to(id).emit('startAll');
       }
       count--;
     }, 1000);
@@ -66,7 +116,35 @@ export class AppGateway
 
   @SubscribeMessage('newSong')
   changeSong(@MessageBody('song') song: any, @MessageBody('id') id: string) {
+    let count = 19;
+    const io = this.server;
+    this.logger.log('New song.');
     this.server.to(id).emit('changeSong', song);
+    this.server.to(id).emit('newRound');
+    io.to(id).emit('roundStartTick', 20);
+    const countdown = setInterval(function () {
+      io.to(id).emit('roundStartTick', count);
+      if (count === 0) {
+        clearInterval(countdown);
+        io.to(id).emit('roundDone');
+        io.to(id).emit('showTitle');
+      }
+      count--;
+    }, 1000);
+  }
+
+  @SubscribeMessage('roundAnswer')
+  savePoints(
+    @MessageBody('user') user,
+    @MessageBody('id') id: string,
+    @MessageBody('answer') answer,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const found = rooms[id].findIndex((element) => element.id == user.id);
+    const score = rooms[id][found].score + (answer ? 10 : 0);
+    const updatedUser = { user, score, id: rooms[id][found].id };
+    rooms[id][found] = updatedUser;
+    this.server.to(id).emit('updateScore', rooms[id]);
   }
 
   afterInit(server: Server) {
@@ -74,8 +152,21 @@ export class AppGateway
   }
 
   handleDisconnect(client: Socket) {
+    const spotify = socketToSpot[client.id];
+    console.log(roomHosts);
+    console.log(rooms);
+    console.log(roomUser);
+    if (roomHosts[spotify] !== undefined) {
+      const room = roomHosts[spotify];
+      this.server.to(room).emit('hostDisconnect');
+      delete roomHosts[spotify];
+      delete rooms[room];
+      delete roomUser[room];
+      console.log(roomHosts);
+      console.log(rooms);
+      console.log(roomUser);
+    }
     this.logger.log(`Client disconnected: ${client.id}`);
-    console.log(Object.keys(client.rooms));
   }
 
   handleConnection(client: Socket, ...args: any[]) {
