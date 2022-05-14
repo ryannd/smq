@@ -41,24 +41,28 @@ const NonHost: any = ({ user }) => {
     socketIo.on('roomDoesNotExist', () => {
       setGameState('notExist');
     });
-  }, []);
 
-  useEffect(() => {
-    if (!socket) return;
-    socket.off('roundDone');
-    socket.off('startAll');
+    socket.on(
+      'playerJoined',
+      (s) => {
+        setUsers((prev) => {
+          return [...s];
+        });
+      },
+      [],
+    );
 
-    socket.on('startAll', (s) => {
-      setGameState('game');
-    });
+    useEffect(() => {
+      if (!socket) return;
+      socket.off('roundDone');
+      socket.off('startAll');
 
-    socket.on('changeSong', (s) => {
-      setCurrentSong(s);
-    });
+      socket.on('startAll', (s) => {
+        setGameState('game');
+      });
 
-    socket.on('playerJoined', (s) => {
-      setUsers((prev) => {
-        return [...s];
+      socket.on('changeSong', (s) => {
+        setCurrentSong(s);
       });
     });
   }, [socket]);
