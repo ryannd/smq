@@ -30,6 +30,12 @@ const NonHost: any = ({ user }) => {
         return [...s];
       });
     });
+    socketIo.on('hostDisconnect', () => {
+      setGameState('disconnect');
+    });
+    socketIo.on('roomDoesNotExist', () => {
+      setGameState('notExist');
+    });
   }, []);
 
   useEffect(() => {
@@ -64,6 +70,7 @@ const NonHost: any = ({ user }) => {
         name: user.body.display_name,
         pic: user.body.images[0] || null,
         url: user.body.external_urls.spotify,
+        id: user.body.id,
       },
     });
     socket.emit('updateScore', (s) => {
@@ -99,7 +106,7 @@ const NonHost: any = ({ user }) => {
     socket.on('changeSong', (s) => {
       if (s !== null) {
         setGameState('game');
-        console.log(s);
+
         setCurrentSong(s);
         setTracks((prev) => {
           const newTracks = Object.assign({}, prev);
@@ -149,6 +156,10 @@ const NonHost: any = ({ user }) => {
             <Heading pt="10px">Room Code: {id}</Heading>
           </Box>
         );
+      case 'disconnect':
+        return <Heading>Host disconnected...</Heading>;
+      case 'notExist':
+        return <Heading>Room does not exist</Heading>;
     }
   };
 

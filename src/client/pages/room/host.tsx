@@ -36,12 +36,13 @@ const Host: any = ({ user }) => {
     if (!randomRoom) return;
     if (!user) return;
     if (!socket) return;
-    socket.emit('joinRoom', {
+    socket.emit('hostJoinRoom', {
       id: randomRoom,
       user: {
         name: user.body.display_name,
         pic: user.body.images[0] || null,
         url: user.body.external_urls.spotify,
+        id: user.body.id,
       },
     });
 

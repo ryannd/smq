@@ -31,6 +31,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
           name: user.body.display_name,
           pic: user.body.images[0] || null,
           url: user.body.external_urls.spotify,
+          id: user.body.id,
         },
         answer: points,
         id,
@@ -88,7 +89,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               <Image
                 boxSize="300px"
                 borderTopRadius="10px"
-                w="640px"
+                w={['100%', '640px']}
                 objectFit="cover"
                 src={currentSong.images[0].url}
                 alt="Dan Abramov"
@@ -105,7 +106,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               alt="Blank album cover"
             />
           )}
-          <Box w="640px">
+          <Box w={['100%', '640px']}>
             <AudioPlayer
               src={currentSong.preview_url}
               volume={0.1}
@@ -118,7 +119,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               customProgressBarSection={[RHAP_UI.PROGRESS_BAR]}
             />
           </Box>
-          <Box mt="20px" w="640px">
+          <Box mt="20px" w={['100%', '640px']}>
             <Select
               options={trackFill}
               isSearchable
@@ -136,7 +137,9 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               onChange={({ value, label }: any) => {
                 setAnswer(value);
                 setAnswerSave(label);
-                setPoints((p) => label === currentSong.name);
+                if (!showTitle) {
+                  setPoints((p) => label === currentSong.name);
+                }
               }}
               components={{
                 DropdownIndicator: () => null,

@@ -17,7 +17,7 @@ import { UserModule } from '../user/user.module';
         return {
           secret: process.env.JWT_SECRET,
           signOptions: {
-            expiresIn: '3600s',
+            expiresIn: '1 day',
           },
         };
       },

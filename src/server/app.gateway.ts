@@ -13,6 +13,7 @@ import { Socket, Server } from 'socket.io';
 
 const rooms = {};
 const roomUser = {};
+const roomHosts = {};
 
 @WebSocketGateway({
   cors: {
@@ -26,30 +27,58 @@ export class AppGateway
   private logger: Logger = new Logger('AppGateway');
 
   @SubscribeMessage('joinRoom')
+  async joinRoom(
+    @MessageBody('id') id: string,
+    @MessageBody('user') user: any,
+    @ConnectedSocket()
+    client: Socket,
+  ) {
+    if (rooms[id] == undefined) {
+      this.server.to(client.id).emit('roomDoesNotExist');
+    } else {
+      await client.join(id);
+      const newUser = {
+        user,
+        score: 0,
+        id: user.id,
+      };
+      console.log(roomUser);
+      console.log(rooms);
+      console.log(roomHosts);
+      if (roomUser[id][user.id] !== true) {
+        rooms[id].push(newUser);
+        roomUser[id][user.id] = true;
+      }
+      this.server.to(id).emit('playerJoined', rooms[id]);
+    }
+  }
+
+  @SubscribeMessage('hostJoinRoom')
   async createRoom(
     @MessageBody('id') id: string,
     @MessageBody('user') user: any,
     @ConnectedSocket()
     client: Socket,
   ) {
-    this.logger.log(id);
     await client.join(id);
     const newUser = {
       user,
       score: 0,
-      id: client.id,
+      id: user.id,
     };
+    roomHosts[user.id] = id;
+    console.log(user.id);
     if (roomUser[id] == undefined) {
       roomUser[id] = {};
     }
     if (rooms[id] == undefined) {
       rooms[id] = [];
     }
-    if (roomUser[id][client.id] !== true) {
+    if (roomUser[id][user.id] !== true) {
       rooms[id].push(newUser);
-      roomUser[id][client.id] = true;
-      this.server.to(id).emit('playerJoined', rooms[id]);
+      roomUser[id][user.id] = true;
     }
+    this.server.to(id).emit('playerJoined', rooms[id]);
   }
 
   @SubscribeMessage('hostTopTracks')
@@ -57,7 +86,6 @@ export class AppGateway
     @MessageBody('id') id: string,
     @ConnectedSocket() client: Socket,
   ) {
-    this.logger.log('hostTopTracks message. topTracks message emitted.');
     this.server.to(id).emit('topTracks');
   }
 
@@ -67,7 +95,6 @@ export class AppGateway
     @ConnectedSocket() client: Socket,
     @MessageBody('data') data: any,
   ) {
-    this.logger.log('tracks message emitted.');
     this.server.to(id).emit('tracks', data);
   }
 
@@ -112,11 +139,9 @@ export class AppGateway
     @MessageBody('answer') answer,
     @ConnectedSocket() client: Socket,
   ) {
-    const found = rooms[id].findIndex((element) => element.id == client.id);
+    const found = rooms[id].findIndex((element) => element.id == user.id);
     const score = rooms[id][found].score + (answer ? 10 : 0);
     const updatedUser = { user, score, id: rooms[id][found].id };
-    console.log(answer);
-    console.log(rooms[id][found]);
     rooms[id][found] = updatedUser;
     this.server.to(id).emit('updateScore', rooms[id]);
   }
@@ -126,6 +151,13 @@ export class AppGateway
   }
 
   handleDisconnect(client: Socket) {
+    if (roomHosts[client.id] !== undefined) {
+      const room = roomHosts[client.id];
+      this.server.to(room).emit('hostDisconnect');
+      delete roomHosts[client.id];
+      delete rooms[room];
+      delete roomUser[room];
+    }
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
