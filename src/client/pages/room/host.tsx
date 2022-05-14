@@ -21,6 +21,7 @@ const Host: any = ({ user }) => {
   const [randomRoom, setRandomRoom] = useState(
     (Math.random() + 1).toString(36).substring(7),
   );
+  const [hideSkip, setHideSkip] = useState(false);
 
   useEffect(() => {
     const socketIo = io();
@@ -86,9 +87,11 @@ const Host: any = ({ user }) => {
     });
 
     socket.on('roundDone', () => {
+      setHideSkip(true);
       setTimeout(() => {
         const next = getRandomSong();
         socket.emit('newSong', { song: next, id: randomRoom });
+        setHideSkip(false);
       }, 5000);
     });
 
@@ -178,9 +181,11 @@ const Host: any = ({ user }) => {
       case 'game':
         return (
           <>
-            <Button onClick={() => skipSong()} mb="10px" colorScheme="red">
-              Skip
-            </Button>
+            {!hideSkip && (
+              <Button onClick={() => skipSong()} mb="10px" colorScheme="red">
+                Skip
+              </Button>
+            )}
             <Game
               currentSong={currentSong}
               allTracks={allTracks}
