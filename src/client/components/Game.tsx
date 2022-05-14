@@ -82,14 +82,18 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
           </Heading>
           {showTitle ? (
             <>
-              <Heading justifyContent="center" alignItems="center">
-                Correct answer is: {currentSong.name} <AnswerCheck />
+              <Heading
+                justifyContent="center"
+                alignItems="center"
+                fontSize={['md', 'xl', '4xl']}
+              >
+                {currentSong.name} <AnswerCheck />
               </Heading>
 
               <Image
                 boxSize="300px"
                 borderTopRadius="10px"
-                w={['100%', '640px']}
+                w={['300px', '640px']}
                 objectFit="cover"
                 src={currentSong.images[0].url}
                 alt="Dan Abramov"
@@ -100,7 +104,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
             <Image
               boxSize="300px"
               borderTopRadius="10px"
-              w="100%"
+              w={['300px', '640px']}
               objectFit="cover"
               src="https://images.pexels.com/photos/3391925/pexels-photo-3391925.jpeg?cs=srgb&dl=pexels-miguel-%C3%A1-padri%C3%B1%C3%A1n-3391925.jpg&fm=jpg&w=640&h=426"
               alt="Blank album cover"
@@ -135,9 +139,9 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
                 }
               }}
               onChange={({ value, label }: any) => {
-                setAnswer(value);
-                setAnswerSave(label);
                 if (!showTitle) {
+                  setAnswer(value);
+                  setAnswerSave(label);
                   setPoints((p) => label === currentSong.name);
                 }
               }}

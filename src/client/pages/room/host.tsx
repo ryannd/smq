@@ -36,6 +36,7 @@ const Host: any = ({ user }) => {
     if (!randomRoom) return;
     if (!user) return;
     if (!socket) return;
+    socket.off('playerJoined');
     socket.emit('hostJoinRoom', {
       id: randomRoom,
       user: {
@@ -44,12 +45,6 @@ const Host: any = ({ user }) => {
         url: user.body.external_urls.spotify,
         id: user.body.id,
       },
-    });
-
-    socket.emit('updateScore', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
     });
 
     socket.on('tracks', async (s) => {

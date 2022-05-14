@@ -14,7 +14,7 @@ const Header: React.FC<Props> = ({ user }: Props) => {
     <>
       <Flex pb="30px">
         <Link href="/">
-          <Heading fontSize={['xl', '4xl']}>spotify.music.quiz</Heading>
+          <Heading fontSize={['xl', '2xl', '4xl']}>spotify.music.quiz</Heading>
         </Link>
         <Box marginLeft="auto">
           <ThemeToggle />

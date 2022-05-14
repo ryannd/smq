@@ -10,9 +10,8 @@ import {
 export default function SocialProfileWithImage({ user }) {
   if (!user) return;
   return (
-    <Center py={6}>
+    <Center py={6} w={'225px'}>
       <Box
-        maxW={'250px'}
         w={'full'}
         bg={useColorModeValue('white', 'gray.900')}
         boxShadow={'2xl'}
@@ -26,7 +25,7 @@ export default function SocialProfileWithImage({ user }) {
           mb={4}
           pos={'relative'}
         />
-        <Heading fontSize={'2xl'} fontFamily={'body'}>
+        <Heading fontSize={'2xl'} fontFamily={'body'} isTruncated>
           {user.user.name}
         </Heading>
         <Text fontWeight={600} color={'blue.400'} mb={4}>
