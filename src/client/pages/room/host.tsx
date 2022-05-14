@@ -30,12 +30,19 @@ const Host: any = ({ user }) => {
         return [...s];
       });
     });
+
+    socketIo.on('userDisconnect', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
   }, []);
 
   useEffect(() => {
     if (!randomRoom) return;
     if (!user) return;
     if (!socket) return;
+    socket.off('playerJoined');
     socket.emit('hostJoinRoom', {
       id: randomRoom,
       user: {
@@ -44,12 +51,6 @@ const Host: any = ({ user }) => {
         url: user.body.external_urls.spotify,
         id: user.body.id,
       },
-    });
-
-    socket.emit('updateScore', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
     });
 
     socket.on('tracks', async (s) => {
@@ -66,12 +67,9 @@ const Host: any = ({ user }) => {
     });
 
     socket.on('playerJoined', (s) => {
-      console.log(s);
-      if (s.length > users.length) {
-        setUsers((prev) => {
-          return [...s];
-        });
-      }
+      setUsers((prev) => {
+        return [...s];
+      });
     });
   }, [randomRoom, user, socket]);
 
@@ -144,6 +142,10 @@ const Host: any = ({ user }) => {
     socket.emit('startGame', { id: randomRoom });
   };
 
+  const skipSong = () => {
+    socket.emit('hostSkip', { id: randomRoom });
+  };
+
   const content = () => {
     switch (gameState) {
       case 'select':
@@ -165,7 +167,9 @@ const Host: any = ({ user }) => {
               </Button>
             </Box>
             <Box>
-              <Heading pt="10px">Room Code: {randomRoom}</Heading>
+              <Heading suppressHydrationWarning pt="10px">
+                Room Code: {randomRoom}
+              </Heading>
             </Box>
           </Box>
         );
@@ -173,13 +177,18 @@ const Host: any = ({ user }) => {
         return <Heading>{startTime}</Heading>;
       case 'game':
         return (
-          <Game
-            currentSong={currentSong}
-            allTracks={allTracks}
-            socket={socket}
-            user={user}
-            id={randomRoom}
-          />
+          <>
+            <Button onClick={() => skipSong()} mb="10px" colorScheme="red">
+              Skip
+            </Button>
+            <Game
+              currentSong={currentSong}
+              allTracks={allTracks}
+              socket={socket}
+              user={user}
+              id={randomRoom}
+            />
+          </>
         );
     }
   };
@@ -194,7 +203,13 @@ const Host: any = ({ user }) => {
       >
         {content()}
         <Box>
-          <Flex justifyContent="center" alignItems="center" mt={10} gap={6}>
+          <Flex
+            justifyContent="center"
+            alignItems="center"
+            mt={10}
+            gap={6}
+            flexDir={['column', 'column', 'row']}
+          >
             {users !== undefined &&
               users.map((user) => {
                 return <SocialProfileWithImage user={user} />;

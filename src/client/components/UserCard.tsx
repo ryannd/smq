@@ -3,37 +3,39 @@ import {
   Box,
   Center,
   Heading,
-  Text,
   useColorModeValue,
 } from '@chakra-ui/react';
 
 export default function SocialProfileWithImage({ user }) {
   if (!user) return;
   return (
-    <Center py={6}>
+    <Center py={[0, 0, 6]} w={['250px', '200px']}>
       <Box
-        maxW={'250px'}
         w={'full'}
         bg={useColorModeValue('white', 'gray.900')}
         boxShadow={'2xl'}
         rounded={'lg'}
-        p={6}
+        p={[2, 2, 4]}
         textAlign={'center'}
+        justifyContent="space-between"
+        alignItems="center"
+        display={['flex', 'flex', 'block']}
+        flexDir={'row'}
       >
         <Avatar
-          size={'xl'}
+          size={'lg'}
           src={user.user.pic ? user.user.pic.url : ''}
-          mb={4}
+          mb={[0, 0, 2]}
           pos={'relative'}
         />
-        <Heading fontSize={'2xl'} fontFamily={'body'}>
+        <Heading
+          fontSize={'2xl'}
+          fontFamily={'body'}
+          mb={[0, 0, 2]}
+          isTruncated
+        >
           {user.user.name}
         </Heading>
-        <Text fontWeight={600} color={'blue.400'} mb={4}>
-          <a href={user.user.url} target="_blank">
-            Spotify Link
-          </a>
-        </Text>
         <Heading
           textAlign={'center'}
           color={useColorModeValue('gray.700', 'gray.400')}

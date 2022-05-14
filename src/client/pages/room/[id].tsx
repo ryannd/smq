@@ -33,8 +33,19 @@ const NonHost: any = ({ user }) => {
     socketIo.on('hostDisconnect', () => {
       setGameState('disconnect');
     });
+    socketIo.on('userDisconnect', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
     socketIo.on('roomDoesNotExist', () => {
       setGameState('notExist');
+    });
+
+    socketIo.on('playerJoined', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
     });
   }, []);
 
@@ -49,14 +60,6 @@ const NonHost: any = ({ user }) => {
 
     socket.on('changeSong', (s) => {
       setCurrentSong(s);
-    });
-
-    socket.on('playerJoined', (s) => {
-      if (s.length > users.length) {
-        setUsers((prev) => {
-          return [...s];
-        });
-      }
     });
   }, [socket]);
 
@@ -172,14 +175,22 @@ const NonHost: any = ({ user }) => {
         justifyContent="space-between"
       >
         {content()}
-        <Box>
-          <Flex justifyContent="center" alignItems="center" mt={10} gap={5}>
-            {users !== undefined &&
-              users.map((user) => {
-                return <SocialProfileWithImage user={user} />;
-              })}
-          </Flex>
-        </Box>
+        {gameState !== 'disconnect' && gameState !== 'notExist' && (
+          <Box>
+            <Flex
+              justifyContent="center"
+              alignItems="center"
+              mt={10}
+              gap={6}
+              flexDir={['column', 'column', 'row']}
+            >
+              {users !== undefined &&
+                users.map((user) => {
+                  return <SocialProfileWithImage user={user} />;
+                })}
+            </Flex>
+          </Box>
+        )}
       </Flex>
     </>
   );
