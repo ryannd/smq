@@ -40,6 +40,20 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setPoints((p) => false);
       setGameTime(20);
     });
+
+    socket.on('endGame', () => {
+      socket.emit('roundAnswer', {
+        user: {
+          name: user.body.display_name,
+          pic: user.body.images[0] || null,
+          url: user.body.external_urls.spotify,
+          id: user.body.id,
+        },
+        answer: points,
+        id,
+      });
+    });
+
     socket.on('roundStartTick', (s) => {
       setGameTime(s);
     });
@@ -136,6 +150,9 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
                   setAnswer(value);
                   setAnswerSave(label);
                   setPoints((p) => label === currentSong.name);
+                } else {
+                  setAnswer('');
+                  setAnswerSave('');
                 }
               }}
               components={{

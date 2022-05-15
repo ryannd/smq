@@ -133,12 +133,8 @@ const Host: any = ({ user }) => {
         console.log(rounds);
         if (rounds - 1 > 0) {
           const next = getRandomSong();
-          if (next) {
-            socket.emit('newSong', { song: next, id: randomRoom });
-            setHideSkip(false);
-          } else {
-            socket.emit('endGame', { id: randomRoom });
-          }
+          socket.emit('newSong', { song: next, id: randomRoom });
+          setHideSkip(false);
         } else {
           socket.emit('endGame', { id: randomRoom });
         }
@@ -177,6 +173,7 @@ const Host: any = ({ user }) => {
 
   const getRandomSong = () => {
     const keys = Object.keys(tracks);
+    console.log(tracks);
     if (keys.length === 0) {
       return false;
     } else {
