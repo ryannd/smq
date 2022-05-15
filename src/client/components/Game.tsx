@@ -22,6 +22,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
     if (!socket) return;
     socket.off('newRound');
     socket.off('showTitle');
+    socket.off('finalAnswer');
 
     socket.on('newRound', (s) => {
       setShowTitle(false);
@@ -41,7 +42,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setGameTime(20);
     });
 
-    socket.on('endGame', () => {
+    socket.on('finalAnswer', () => {
       socket.emit('roundAnswer', {
         user: {
           name: user.body.display_name,

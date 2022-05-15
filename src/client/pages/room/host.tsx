@@ -43,6 +43,7 @@ const Host: any = ({ user }) => {
 
   useEffect(() => {
     const socketIo = io();
+
     setSocket(socketIo);
     socketIo.on('updateScore', (s) => {
       setUsers((prev) => {

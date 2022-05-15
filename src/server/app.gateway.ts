@@ -165,6 +165,7 @@ export class AppGateway
   @SubscribeMessage('endGame')
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
+    this.server.to(id).emit('finalAnswer');
     clearInterval(countdown);
   }
 
@@ -176,7 +177,15 @@ export class AppGateway
         score: 0,
       };
     });
-    this.server.to(id).emit('newGame', rooms[id]);
+    this.server.to(id).emit(
+      'newGame',
+      rooms[id].map((u) => {
+        return {
+          ...u,
+          score: 0,
+        };
+      }),
+    );
     clearInterval(countdown);
   }
 
