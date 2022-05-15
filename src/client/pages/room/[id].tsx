@@ -31,8 +31,11 @@ const NonHost: any = ({ user }) => {
         return [...s];
       });
     });
-    socketIo.on('newGame', () => {
+    socketIo.on('newGame', (s) => {
       setGameState('wait');
+      setUsers((prev) => {
+        return [...s];
+      });
     });
     socketIo.on('hostDisconnect', () => {
       setGameState('disconnect');

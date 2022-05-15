@@ -170,7 +170,13 @@ export class AppGateway
 
   @SubscribeMessage('newGame')
   newGame(@MessageBody('id') id: string) {
-    this.server.to(id).emit('newGame');
+    rooms[id] = rooms[id].map((u) => {
+      return {
+        ...u,
+        score: 0,
+      };
+    });
+    this.server.to(id).emit('newGame', rooms[id]);
     clearInterval(countdown);
   }
 

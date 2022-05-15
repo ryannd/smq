@@ -66,11 +66,14 @@ const Host: any = ({ user }) => {
       setGameState('end');
     });
 
-    socketIo.on('newGame', () => {
+    socketIo.on('newGame', (s) => {
       setStartTime(5);
       setHideSkip(false);
       setRounds(0);
       setGameState('select');
+      setUsers((prev) => {
+        return [...s];
+      });
     });
   }, []);
 
@@ -130,8 +133,12 @@ const Host: any = ({ user }) => {
         console.log(rounds);
         if (rounds - 1 > 0) {
           const next = getRandomSong();
-          socket.emit('newSong', { song: next, id: randomRoom });
-          setHideSkip(false);
+          if (next) {
+            socket.emit('newSong', { song: next, id: randomRoom });
+            setHideSkip(false);
+          } else {
+            socket.emit('endGame', { id: randomRoom });
+          }
         } else {
           socket.emit('endGame', { id: randomRoom });
         }
@@ -170,15 +177,19 @@ const Host: any = ({ user }) => {
 
   const getRandomSong = () => {
     const keys = Object.keys(tracks);
-    const index = Math.floor(Math.random() * keys.length);
-    const randomKey = keys[index];
-    const nextSong = tracks[randomKey];
-    setTracks((prev) => {
-      const newTracks = Object.assign({}, prev);
-      delete newTracks[randomKey];
-      return newTracks;
-    });
-    return nextSong;
+    if (keys.length === 0) {
+      return false;
+    } else {
+      const index = Math.floor(Math.random() * keys.length);
+      const randomKey = keys[index];
+      const nextSong = tracks[randomKey];
+      setTracks((prev) => {
+        const newTracks = Object.assign({}, prev);
+        delete newTracks[randomKey];
+        return newTracks;
+      });
+      return nextSong;
+    }
   };
 
   const startGame = async () => {
