@@ -8,10 +8,6 @@ const Join = () => {
 
   const handleChange = (event) => setCode(event.target.value);
 
-  const handleClick = () => {
-    router.push(`/room/${code}`);
-  };
-
   return (
     <>
       <Box w="50%">
@@ -21,9 +17,11 @@ const Join = () => {
           value={code}
           onChange={handleChange}
         ></Input>
-        <Button colorScheme="green" w="100%" mt="30px" onClick={handleClick}>
-          Join Room
-        </Button>
+        <a href={`/room/${code}`}>
+          <Button colorScheme="green" w="100%" mt="30px">
+            Join Room
+          </Button>
+        </a>
       </Box>
     </>
   );

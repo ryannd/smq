@@ -37,7 +37,7 @@ export class UserService {
     if (user) {
       const { accessToken, refreshToken, expiresAt } = user;
 
-      if (reqTime <= expiresAt) {
+      if (reqTime < expiresAt) {
         console.log('Token still valid.');
         this.spotifyClient.setAccessToken(accessToken);
       } else {
@@ -50,7 +50,7 @@ export class UserService {
             this.spotifyClient.setAccessToken(data.body.access_token);
             return data.body.access_token;
           });
-
+        this.spotifyClient.setAccessToken(newAccessToken);
         await this.userModel.findOneAndUpdate(
           { id },
           { accessToken: newAccessToken },

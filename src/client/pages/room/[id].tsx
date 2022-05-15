@@ -20,12 +20,19 @@ const NonHost: any = ({ user }) => {
   const [currentSong, setCurrentSong] = useState<any>();
   const [users, setUsers] = useState([]);
   const [gameState, setGameState] = useState('wait');
+  const [playlistTitle, setPlaylistTitle] = useState('');
   const { id } = router.query;
 
   useEffect(() => {
     const socketIo = io();
     setSocket(socketIo);
     socketIo.on('updateScore', (s) => {
+      setUsers((prev) => {
+        return [...s];
+      });
+    });
+    socketIo.on('newGame', (s) => {
+      setGameState('wait');
       setUsers((prev) => {
         return [...s];
       });
@@ -47,6 +54,10 @@ const NonHost: any = ({ user }) => {
         return [...s];
       });
     });
+
+    socketIo.on('endGame', (s) => {
+      setGameState('end');
+    });
   }, []);
 
   useEffect(() => {
@@ -67,6 +78,8 @@ const NonHost: any = ({ user }) => {
     if (!id) return;
     if (!user) return;
     if (!socket) return;
+    socket.off('playlist');
+    socket.off('tracks');
     socket.emit('joinRoom', {
       id,
       user: {
@@ -86,18 +99,28 @@ const NonHost: any = ({ user }) => {
       setGameType('topTracks');
       setTracks({});
       const data = await fetcher('/api/tracks/top');
+      console.log(data);
       data.forEach((track) => {
         addItem(track);
       });
-      socket.emit('tracks', { id, data });
+      socket.emit('tracks', { id, tracks: data });
+    });
+    socket.on('playlist', (s) => {
+      setGameType('playlist');
+      setTracks({});
+      setPlaylistTitle(s);
+      console.log(s);
     });
 
     socket.on('tracks', async (s) => {
-      console.log('Recieved tracks.');
-      if (s.length > 0) {
-        s.forEach((track) => {
-          addItem(track);
-        });
+      console.log(s);
+      if (s !== null) {
+        console.log('Recieved tracks.');
+        if (s.length > 0) {
+          s.forEach((track) => {
+            addItem(track);
+          });
+        }
       }
     });
 
@@ -156,9 +179,12 @@ const NonHost: any = ({ user }) => {
         return (
           <Box textAlign="center">
             <Heading>Current mode: {strings[gameType]}</Heading>
+            {gameType === 'playlist' && <Heading>{playlistTitle}</Heading>}
             <Heading pt="10px">Room Code: {id}</Heading>
           </Box>
         );
+      case 'end':
+        return;
       case 'disconnect':
         return <Heading>Host disconnected...</Heading>;
       case 'notExist':
