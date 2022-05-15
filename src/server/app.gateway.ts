@@ -35,6 +35,7 @@ export class AppGateway
     @ConnectedSocket()
     client: Socket,
   ) {
+    console.log(rooms);
     if (rooms[id] == undefined) {
       this.server.to(client.id).emit('roomDoesNotExist');
     } else {
@@ -73,18 +74,18 @@ export class AppGateway
       score: 0,
       id: user.id,
     };
-    roomHosts[user.id] = id;
-    if (roomUser[id] == undefined) {
-      roomUser[id] = {};
-    }
-    if (rooms[id] == undefined) {
-      rooms[id] = [];
-    }
-    if (roomUser[id][user.id] !== true) {
+    if (roomHosts[user.id] === undefined) {
+      roomHosts[user.id] = id;
+      if (roomUser[id] == undefined) {
+        roomUser[id] = {};
+      }
+      if (rooms[id] == undefined) {
+        rooms[id] = [];
+      }
       rooms[id].push(newUser);
       roomUser[id][user.id] = true;
+      socketToSpot[client.id] = user.id;
     }
-    socketToSpot[client.id] = user.id;
     this.server.to(id).emit('playerJoined', rooms[id]);
   }
 
@@ -96,13 +97,21 @@ export class AppGateway
     this.server.to(id).emit('topTracks');
   }
 
+  @SubscribeMessage('hostPlaylist')
+  playlistMessage(
+    @MessageBody('id') id: string,
+    @MessageBody('title') title: string,
+  ) {
+    this.server.to(id).emit('playlist', title);
+  }
+
   @SubscribeMessage('tracks')
   getTopTracks(
     @MessageBody('id') id: string,
     @ConnectedSocket() client: Socket,
-    @MessageBody('data') data: any,
+    @MessageBody('tracks') tracks: any,
   ) {
-    this.server.to(id).emit('tracks', data);
+    this.server.to(id).emit('tracks', tracks);
   }
 
   @SubscribeMessage('startGame')
@@ -151,6 +160,18 @@ export class AppGateway
     const updatedUser = { user, score, id: rooms[id][found].id };
     rooms[id][found] = updatedUser;
     this.server.to(id).emit('updateScore', rooms[id]);
+  }
+
+  @SubscribeMessage('endGame')
+  endGame(@MessageBody('id') id: string) {
+    this.server.to(id).emit('endGame');
+    clearInterval(countdown);
+  }
+
+  @SubscribeMessage('newGame')
+  newGame(@MessageBody('id') id: string) {
+    this.server.to(id).emit('newGame');
+    clearInterval(countdown);
   }
 
   afterInit(server: Server) {

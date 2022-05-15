@@ -1,12 +1,27 @@
-import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  NumberInput,
+  NumberInputField,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
+  Text,
+  useDisclosure,
+} from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import fetcher from '../../utils/fetcher';
 import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
+import PlaylistModal from '~client/components/PlaylistModal';
 
 const strings = {
   topTracks: 'Top Tracks',
+  playlist: 'Playlist',
 };
 
 const Host: any = ({ user }) => {
@@ -22,6 +37,9 @@ const Host: any = ({ user }) => {
     (Math.random() + 1).toString(36).substring(7),
   );
   const [hideSkip, setHideSkip] = useState(false);
+  const [playlistTitle, setPlaylistTitle] = useState('');
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [rounds, setRounds] = useState(0);
 
   useEffect(() => {
     const socketIo = io();
@@ -37,6 +55,23 @@ const Host: any = ({ user }) => {
         return [...s];
       });
     });
+
+    socketIo.on('playlist', (s) => {
+      setGameType('playlist');
+      setPlaylistTitle(s);
+      console.log(s);
+    });
+
+    socketIo.on('endGame', (s) => {
+      setGameState('end');
+    });
+
+    socketIo.on('newGame', () => {
+      setStartTime(5);
+      setHideSkip(false);
+      setRounds(0);
+      setGameState('select');
+    });
   }, []);
 
   useEffect(() => {
@@ -44,6 +79,7 @@ const Host: any = ({ user }) => {
     if (!user) return;
     if (!socket) return;
     socket.off('playerJoined');
+    socket.off('tracks');
     socket.emit('hostJoinRoom', {
       id: randomRoom,
       user: {
@@ -55,11 +91,13 @@ const Host: any = ({ user }) => {
     });
 
     socket.on('tracks', async (s) => {
-      console.log('Recieved tracks.');
-      if (s.length > 0) {
-        s.forEach((track) => {
-          addItem(track);
-        });
+      if (s !== null) {
+        console.log('Recieved tracks.');
+        if (s.length > 0) {
+          s.forEach((track) => {
+            addItem(track);
+          });
+        }
       }
     });
 
@@ -89,10 +127,16 @@ const Host: any = ({ user }) => {
     socket.on('roundDone', () => {
       setHideSkip(true);
       setTimeout(() => {
-        const next = getRandomSong();
-        socket.emit('newSong', { song: next, id: randomRoom });
-        setHideSkip(false);
+        console.log(rounds);
+        if (rounds - 1 > 0) {
+          const next = getRandomSong();
+          socket.emit('newSong', { song: next, id: randomRoom });
+          setHideSkip(false);
+        } else {
+          socket.emit('endGame', { id: randomRoom });
+        }
       }, 5000);
+      setRounds((prev) => prev - 1);
     });
 
     socket.on('changeSong', (s) => {
@@ -119,7 +163,8 @@ const Host: any = ({ user }) => {
     socket.emit('hostTopTracks', { id: randomRoom });
     setTracks({});
     const data = await fetcher('/api/tracks/top');
-    socket.emit('tracks', { id: randomRoom, data });
+    console.log(data);
+    socket.emit('tracks', { id: randomRoom, tracks: data });
     setGameType('topTracks');
   };
 
@@ -138,15 +183,23 @@ const Host: any = ({ user }) => {
 
   const startGame = async () => {
     setGameState('prep');
+    console.log(gameType);
     switch (gameType) {
       case 'topTracks':
         await selectTopTracks();
+        break;
+      case 'playlist':
+        break;
     }
     socket.emit('startGame', { id: randomRoom });
   };
 
   const skipSong = () => {
     socket.emit('hostSkip', { id: randomRoom });
+  };
+
+  const startNewGame = () => {
+    socket.emit('newGame', { id: randomRoom });
   };
 
   const content = () => {
@@ -157,14 +210,38 @@ const Host: any = ({ user }) => {
             <Box pb="50px">
               <Heading pb="10px">Host Settings</Heading>
               <Text fontSize="2xl">Current mode: {strings[gameType]}</Text>
+              {gameType === 'playlist' && <Text>{playlistTitle}</Text>}
             </Box>
             <Box pb="50px">
               <Box pb="10px">
                 <Button onClick={() => selectTopTracks()} mr="10px">
                   Top Tracks
                 </Button>
-                <Button>Select a playlist</Button>
+                <Button onClick={onOpen}>Select a playlist</Button>
               </Box>
+              <Flex>
+                <NumberInput
+                  maxW="100px"
+                  mr="2rem"
+                  value={rounds}
+                  onChange={(value) => setRounds(parseInt(value))}
+                  max={Object.keys(tracks).length + 1}
+                >
+                  <NumberInputField />
+                </NumberInput>
+                <Slider
+                  flex="1"
+                  focusThumbOnChange={false}
+                  value={rounds}
+                  onChange={(value) => setRounds(value)}
+                  max={Object.keys(tracks).length + 1}
+                >
+                  <SliderTrack>
+                    <SliderFilledTrack />
+                  </SliderTrack>
+                  <SliderThumb fontSize="sm" boxSize="32px" children={rounds} />
+                </Slider>
+              </Flex>
               <Button colorScheme="green" onClick={() => startGame()}>
                 Start Game
               </Button>
@@ -195,6 +272,8 @@ const Host: any = ({ user }) => {
             />
           </>
         );
+      case 'end':
+        return <Button onClick={() => startNewGame()}>Start new game.</Button>;
     }
   };
 
@@ -222,6 +301,12 @@ const Host: any = ({ user }) => {
           </Flex>
         </Box>
       </Flex>
+      <PlaylistModal
+        isOpen={isOpen}
+        onClose={onClose}
+        socket={socket}
+        room={randomRoom}
+      />
     </>
   );
 };

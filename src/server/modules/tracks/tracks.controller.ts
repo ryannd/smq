@@ -13,4 +13,13 @@ export class TracksController {
   async getUserTopTracks(@Request() req) {
     return await this.tracksService.getUserTopTracks(req.user.name);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('playlist/:id')
+  async getPlaylistFromId(@Request() req) {
+    return await this.tracksService.getPlaylistFromId(
+      req.params.id,
+      req.user.name,
+    );
+  }
 }
