@@ -47,13 +47,13 @@ const Host: any = ({ user }) => {
     setSocket(socketIo);
     socketIo.on('updateScore', (s) => {
       setUsers((prev) => {
-        return [...s];
+        return [...Object.values(s.users)];
       });
     });
 
     socketIo.on('userDisconnect', (s) => {
       setUsers((prev) => {
-        return [...s];
+        return [...Object.values(s.users)];
       });
     });
 
@@ -73,7 +73,7 @@ const Host: any = ({ user }) => {
       setRounds(0);
       setGameState('select');
       setUsers((prev) => {
-        return [...s];
+        return [...Object.values(s.users)];
       });
     });
   }, []);
@@ -84,6 +84,7 @@ const Host: any = ({ user }) => {
     if (!socket) return;
     socket.off('playerJoined');
     socket.off('tracks');
+
     socket.emit('hostJoinRoom', {
       id: randomRoom,
       user: {
@@ -110,9 +111,12 @@ const Host: any = ({ user }) => {
     });
 
     socket.on('playerJoined', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
+      if (s !== undefined) {
+        console.log(s);
+        setUsers((prev) => {
+          return [...Object.values(s.users)];
+        });
+      }
     });
   }, [randomRoom, user, socket]);
 
@@ -305,6 +309,7 @@ const Host: any = ({ user }) => {
           >
             {users !== undefined &&
               users.map((user) => {
+                console.log(user);
                 return <SocialProfileWithImage user={user} />;
               })}
           </Flex>

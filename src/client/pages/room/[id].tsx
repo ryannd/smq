@@ -28,13 +28,13 @@ const NonHost: any = ({ user }) => {
     setSocket(socketIo);
     socketIo.on('updateScore', (s) => {
       setUsers((prev) => {
-        return [...s];
+        return [...Object.values(s.users)];
       });
     });
     socketIo.on('newGame', (s) => {
       setGameState('wait');
       setUsers((prev) => {
-        return [...s];
+        return [...Object.values(s.users)];
       });
     });
     socketIo.on('hostDisconnect', () => {
@@ -49,10 +49,13 @@ const NonHost: any = ({ user }) => {
       setGameState('notExist');
     });
 
-    socketIo.on('playerJoined', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
+    socket.on('playerJoined', (s) => {
+      if (s !== undefined) {
+        console.log(s);
+        setUsers((prev) => {
+          return [...Object.values(s.users)];
+        });
+      }
     });
 
     socketIo.on('endGame', (s) => {

@@ -10,11 +10,12 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
+import { Room } from './types/room';
 
-const rooms = {};
-const roomUser = {};
-const roomHosts = {};
-const socketToSpot = {};
+const rooms = new Map<string, Room>();
+const hostToRoomId = new Map<string, string>();
+const isUserInRoom = new Map<string, boolean>();
+const socketToSpotifyId = new Map<string, string>();
 
 let countdown;
 @WebSocketGateway({
@@ -22,7 +23,7 @@ let countdown;
     origin: '*',
   },
 })
-export class AppGateway
+export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server: Server;
@@ -35,22 +36,21 @@ export class AppGateway
     @ConnectedSocket()
     client: Socket,
   ) {
-    console.log(rooms);
-    if (rooms[id] == undefined) {
+    if (!rooms.has(id)) {
       this.server.to(client.id).emit('roomDoesNotExist');
     } else {
       await client.join(id);
       const newUser = {
         user,
         score: 0,
-        id: user.id,
+        voteSkip: false,
+        answer: '',
       };
-      if (roomUser[id][user.id] !== true) {
-        rooms[id].push(newUser);
-        roomUser[id][user.id] = true;
+      if (!isUserInRoom.has(user.id)) {
+        rooms.get(id).users[user.id] = newUser;
       }
-      socketToSpot[client.id] = user.id;
-      this.server.to(id).emit('playerJoined', rooms[id]);
+      socketToSpotifyId.set(client.id, user.id);
+      this.server.to(id).emit('playerJoined', rooms.get(id));
     }
   }
 
@@ -72,28 +72,29 @@ export class AppGateway
     const newUser = {
       user,
       score: 0,
+      voteSkip: false,
+      answer: '',
       id: user.id,
     };
-    if (roomHosts[user.id] === undefined) {
-      roomHosts[user.id] = id;
-      if (roomUser[id] == undefined) {
-        roomUser[id] = {};
-      }
-      if (rooms[id] == undefined) {
-        rooms[id] = [];
-      }
-      rooms[id].push(newUser);
-      roomUser[id][user.id] = true;
-      socketToSpot[client.id] = user.id;
+    console.log('Host join room.');
+    if (!isUserInRoom.has(user.id)) {
+      rooms.set(id, {
+        host: user.id,
+        users: {},
+        tracks: [],
+      });
+      rooms.get(id).users[user.id] = newUser;
+      isUserInRoom.set(user.id, true);
+      socketToSpotifyId.set(client.id, user.id);
+      hostToRoomId.set(user.id, id);
+      console.log('User added.');
     }
-    this.server.to(id).emit('playerJoined', rooms[id]);
+
+    this.server.to(id).emit('playerJoined', rooms.get(id));
   }
 
   @SubscribeMessage('hostTopTracks')
-  topTracksMessage(
-    @MessageBody('id') id: string,
-    @ConnectedSocket() client: Socket,
-  ) {
+  topTracksMessage(@MessageBody('id') id: string) {
     this.server.to(id).emit('topTracks');
   }
 
@@ -108,16 +109,20 @@ export class AppGateway
   @SubscribeMessage('tracks')
   getTopTracks(
     @MessageBody('id') id: string,
-    @ConnectedSocket() client: Socket,
     @MessageBody('tracks') tracks: any,
   ) {
-    this.server.to(id).emit('tracks', tracks);
+    const room = rooms.get(id);
+    room.tracks = room.tracks.concat(tracks);
+    this.server.to(id).emit('tracks', room.tracks);
   }
 
   @SubscribeMessage('startGame')
   startTimer(@MessageBody('id') id: string) {
-    this.server.to(id).emit('gameTimerStart');
     const io = this.server;
+    const room = rooms.get(id);
+    this.server.to(id).emit('tracks', room.tracks);
+    this.server.to(id).emit('gameTimerStart');
+
     let count = 5;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
@@ -131,11 +136,12 @@ export class AppGateway
 
   @SubscribeMessage('newSong')
   changeSong(@MessageBody('song') song: any, @MessageBody('id') id: string) {
-    let count = 19;
     const io = this.server;
-    this.logger.log('New song.');
+    let count = 19;
+
     this.server.to(id).emit('changeSong', song);
     this.server.to(id).emit('newRound');
+
     io.to(id).emit('roundStartTick', 20);
     countdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
@@ -155,11 +161,10 @@ export class AppGateway
     @MessageBody('answer') answer,
     @ConnectedSocket() client: Socket,
   ) {
-    const found = rooms[id].findIndex((element) => element.id == user.id);
-    const score = rooms[id][found].score + (answer ? 10 : 0);
-    const updatedUser = { user, score, id: rooms[id][found].id };
-    rooms[id][found] = updatedUser;
-    this.server.to(id).emit('updateScore', rooms[id]);
+    const foundUser = rooms.get(id).users[user.id];
+    const newScore = foundUser.score + (answer ? 10 : 0);
+    foundUser.score = newScore;
+    this.server.to(id).emit('updateScore', rooms.get(id));
   }
 
   @SubscribeMessage('endGame')
@@ -171,21 +176,16 @@ export class AppGateway
 
   @SubscribeMessage('newGame')
   newGame(@MessageBody('id') id: string) {
-    rooms[id] = rooms[id].map((u) => {
-      return {
-        ...u,
+    const users = rooms.get(id).users;
+    Object.entries(users).forEach((entry) => {
+      const [key, val]: any = entry;
+      rooms.get(id).users[key] = {
+        ...val,
         score: 0,
       };
     });
-    this.server.to(id).emit(
-      'newGame',
-      rooms[id].map((u) => {
-        return {
-          ...u,
-          score: 0,
-        };
-      }),
-    );
+
+    this.server.to(id).emit('newGame', rooms.get(id));
     clearInterval(countdown);
   }
 
@@ -194,14 +194,16 @@ export class AppGateway
   }
 
   handleDisconnect(client: Socket) {
-    const spotify = socketToSpot[client.id];
-    if (roomHosts[spotify] !== undefined) {
-      const room = roomHosts[spotify];
+    const spotify = socketToSpotifyId.get(client.id);
+    if (hostToRoomId.has(spotify)) {
+      const room = hostToRoomId.get(spotify);
+      const users = rooms.get(room).users;
+      Object.keys(users).forEach((user) => isUserInRoom.delete(user));
       this.server.to(room).emit('hostDisconnect');
-      delete roomHosts[spotify];
-      delete rooms[room];
-      delete roomUser[room];
+      hostToRoomId.delete(spotify);
+      rooms.delete(room);
     }
+    isUserInRoom.delete(spotify);
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
