@@ -10,14 +10,21 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
-import { Room } from './types/room';
+import { SocketRoom } from './types/SocketRoom';
+import { SocketUser } from './types/SocketUser';
+import { TracksService } from '../tracks/tracks.service';
 
-const rooms = new Map<string, Room>();
+// hold room data
+const rooms = new Map<string, SocketRoom>();
+// get host room
 const hostToRoomId = new Map<string, string>();
+// only allow user to be in 1 room at a time
 const isUserInRoom = new Map<string, boolean>();
+// map socketio client id to spotify user id
 const socketToSpotifyId = new Map<string, string>();
+// timer countdown interval
+let roundCountdown;
 
-let countdown;
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -28,6 +35,7 @@ export class GameGateway
 {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
+  constructor(private tracksClient: TracksService){}
 
   @SubscribeMessage('joinRoom')
   async joinRoom(
@@ -40,11 +48,12 @@ export class GameGateway
       this.server.to(client.id).emit('roomDoesNotExist');
     } else {
       await client.join(id);
-      const newUser = {
+      const newUser:SocketUser = {
         user,
         score: 0,
         voteSkip: false,
         answer: '',
+        id: user.id
       };
       if (!isUserInRoom.has(user.id)) {
         rooms.get(id).users[user.id] = newUser;
@@ -58,7 +67,7 @@ export class GameGateway
   skipSong(@MessageBody('id') id: string) {
     this.server.to(id).emit('roundDone');
     this.server.to(id).emit('showTitle');
-    clearInterval(countdown);
+    clearInterval(roundCountdown);
   }
 
   @SubscribeMessage('hostJoinRoom')
@@ -69,7 +78,7 @@ export class GameGateway
     client: Socket,
   ) {
     await client.join(id);
-    const newUser = {
+    const newUser:SocketUser = {
       user,
       score: 0,
       voteSkip: false,
@@ -99,11 +108,24 @@ export class GameGateway
   }
 
   @SubscribeMessage('hostPlaylist')
-  playlistMessage(
+  async playlistMessage(
     @MessageBody('id') id: string,
     @MessageBody('title') title: string,
+    @MessageBody('playlistId') playlistId: string,
+    @ConnectedSocket()
+    client: Socket
   ) {
     this.server.to(id).emit('playlist', title);
+    const tracks = await this.tracksClient.getPlaylistFromId(playlistId, socketToSpotifyId.get(client.id))
+    const room = rooms.get(id);
+    room.tracks = tracks.tracks;
+    // remove duplicates (need test)
+    // room.tracks = room.tracks.filter((value,index,self) => {
+    //   index === self.findIndex((t) => {
+    //     t.id === value.id
+    //   })
+    // })
+    this.server.to(id).emit('tracks', room.tracks);
   }
 
   @SubscribeMessage('tracks')
@@ -113,6 +135,12 @@ export class GameGateway
   ) {
     const room = rooms.get(id);
     room.tracks = room.tracks.concat(tracks);
+    // remove duplicates (need test)
+    // room.tracks = room.tracks.filter((value,index,self) => {
+    //   index === self.findIndex((t) => {
+    //     t.id === value.id
+    //   })
+    // })
     this.server.to(id).emit('tracks', room.tracks);
   }
 
@@ -143,10 +171,10 @@ export class GameGateway
     this.server.to(id).emit('newRound');
 
     io.to(id).emit('roundStartTick', 20);
-    countdown = setInterval(function () {
+    roundCountdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
       if (count === 0) {
-        clearInterval(countdown);
+        clearInterval(roundCountdown);
         io.to(id).emit('roundDone');
         io.to(id).emit('showTitle');
       }
@@ -171,7 +199,7 @@ export class GameGateway
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
     this.server.to(id).emit('finalAnswer');
-    clearInterval(countdown);
+    clearInterval(roundCountdown);
   }
 
   @SubscribeMessage('newGame')
@@ -186,7 +214,7 @@ export class GameGateway
     });
 
     this.server.to(id).emit('newGame', rooms.get(id));
-    clearInterval(countdown);
+    clearInterval(roundCountdown);
   }
 
   afterInit(server: Server) {

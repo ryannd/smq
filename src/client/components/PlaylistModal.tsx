@@ -24,8 +24,7 @@ const PlaylistModal = ({ isOpen, onClose, socket, room }) => {
       if (urlObj.hostname === 'open.spotify.com' && id[2] !== undefined) {
         setValid(true);
         const playlist = await fetcher(`/api/tracks/playlist/${id[2]}`);
-        socket.emit('hostPlaylist', { id: room, title: playlist.title });
-        socket.emit('tracks', { id: room, tracks: playlist.tracks });
+        socket.emit('hostPlaylist', { id: room, title: playlist.title, playlistId: id[2] });
         onClose();
       } else {
         setValid(false);
