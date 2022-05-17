@@ -14,7 +14,6 @@ import {
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import fetcher from '../../utils/fetcher';
 import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
 import PlaylistModal from '~client/components/PlaylistModal';
@@ -27,8 +26,8 @@ const strings = {
 const Host: any = ({ user }) => {
   const [socket, setSocket] = useState(null);
   const [gameType, setGameType] = useState('topTracks');
-  const [tracks, setTracks] = useState({});
-  const [allTracks, setAllTracks] = useState({});
+  const [tracks, setTracks] = useState([]);
+  const [allTracks, setAllTracks] = useState([]);
   const [startTime, setStartTime] = useState(5);
   const [gameState, setGameState] = useState('select');
   const [currentSong, setCurrentSong] = useState<any>();
@@ -45,22 +44,22 @@ const Host: any = ({ user }) => {
     const socketIo = io();
 
     setSocket(socketIo);
-    socketIo.on('updateScore', (s) => {
+    socketIo.on('updateRoom', (s) => {
+      console.log(s);
       setUsers((prev) => {
-        return [...s];
+        return [...Object.values(s.users)];
       });
-    });
-
-    socketIo.on('userDisconnect', (s) => {
-      setUsers((prev) => {
-        return [...s];
+      setTracks((prev) => {
+        return [...s.tracks];
+      });
+      setAllTracks((prev) => {
+        return s.allTrackTitles;
       });
     });
 
     socketIo.on('playlist', (s) => {
       setGameType('playlist');
       setPlaylistTitle(s);
-      console.log(s);
     });
 
     socketIo.on('endGame', (s) => {
@@ -72,9 +71,10 @@ const Host: any = ({ user }) => {
       setHideSkip(false);
       setRounds(0);
       setGameState('select');
-      setUsers((prev) => {
-        return [...s];
-      });
+    });
+
+    socketIo.on('timerStartTick', (s) => {
+      setStartTime(s);
     });
   }, []);
 
@@ -84,6 +84,8 @@ const Host: any = ({ user }) => {
     if (!socket) return;
     socket.off('playerJoined');
     socket.off('tracks');
+    socket.off('hostJoinRoom');
+
     socket.emit('hostJoinRoom', {
       id: randomRoom,
       user: {
@@ -93,113 +95,49 @@ const Host: any = ({ user }) => {
         id: user.body.id,
       },
     });
-
-    socket.on('tracks', async (s) => {
-      if (s !== null) {
-        console.log('Recieved tracks.');
-        if (s.length > 0) {
-          s.forEach((track) => {
-            addItem(track);
-          });
-        }
-      }
-    });
-
-    socket.on('timerStartTick', (s) => {
-      setStartTime(s);
-    });
-
-    socket.on('playerJoined', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
-    });
   }, [randomRoom, user, socket]);
 
   useEffect(() => {
     if (!socket) return;
     socket.off('startAll');
     socket.off('changeSong');
-    socket.off('roundDone');
 
     socket.on('startAll', (s) => {
       setGameState('game');
-      const next = getRandomSong();
-      socket.emit('newSong', { song: next, id: randomRoom });
-    });
-
-    socket.on('roundDone', () => {
-      setHideSkip(true);
-      setTimeout(() => {
-        console.log(rounds);
-        if (rounds - 1 > 0) {
-          const next = getRandomSong();
-          socket.emit('newSong', { song: next, id: randomRoom });
-          setHideSkip(false);
-        } else {
-          socket.emit('endGame', { id: randomRoom });
-        }
-      }, 5000);
-      setRounds((prev) => prev - 1);
+      socket.emit('newSong', { id: randomRoom });
     });
 
     socket.on('changeSong', (s) => {
       setCurrentSong(s);
     });
-  }, [tracks, socket]);
+  }, [randomRoom, socket]);
 
-  const addItem = (item) => {
-    if (tracks[item.name] !== undefined) return;
-    setTracks((prev) => {
-      const newTracks = Object.assign({}, prev);
-      newTracks[item.name] = item;
-      return newTracks;
+  useEffect(() => {
+    if (!randomRoom) return;
+    if (!socket) return;
+    socket.on('roundDone', () => {
+      setHideSkip(true);
+      setTimeout(() => {
+        if (rounds - 1 > 0) {
+          socket.emit('newSong', { id: randomRoom });
+          setHideSkip(false);
+        } else {
+          socket.emit('endGame', { id: randomRoom });
+        }
+      }, 5000);
+      console.log(rounds);
+      setRounds((prev) => prev - 1);
     });
-    setAllTracks((prev) => {
-      const newTracks = Object.assign({}, prev);
-      newTracks[item.name] = item;
-      return newTracks;
-    });
-  };
+    return () => socket.off('roundDone');
+  }, [randomRoom, socket, rounds]);
 
-  const selectTopTracks = async () => {
-    console.log('Top tracks');
+  const selectTopTracks = () => {
     socket.emit('hostTopTracks', { id: randomRoom });
-    setTracks({});
-    const data = await fetcher('/api/tracks/top');
-    console.log(data);
-    socket.emit('tracks', { id: randomRoom, tracks: data });
     setGameType('topTracks');
-  };
-
-  const getRandomSong = () => {
-    const keys = Object.keys(tracks);
-    console.log(tracks);
-    if (keys.length === 0) {
-      return false;
-    } else {
-      const index = Math.floor(Math.random() * keys.length);
-      const randomKey = keys[index];
-      const nextSong = tracks[randomKey];
-      setTracks((prev) => {
-        const newTracks = Object.assign({}, prev);
-        delete newTracks[randomKey];
-        return newTracks;
-      });
-      return nextSong;
-    }
   };
 
   const startGame = async () => {
     setGameState('prep');
-    console.log(gameType);
-    switch (gameType) {
-      case 'topTracks':
-        await selectTopTracks();
-        break;
-      case 'playlist':
-        break;
-    }
     socket.emit('startGame', { id: randomRoom });
   };
 
@@ -222,28 +160,29 @@ const Host: any = ({ user }) => {
               {gameType === 'playlist' && <Text>{playlistTitle}</Text>}
             </Box>
             <Box pb="50px">
-              <Box pb="10px">
+              <Box pb="10px" mb="10px">
                 <Button onClick={() => selectTopTracks()} mr="10px">
                   Top Tracks
                 </Button>
                 <Button onClick={onOpen}>Select a playlist</Button>
               </Box>
-              <Flex>
+              <Flex justifyContent="center">
                 <NumberInput
                   maxW="100px"
                   mr="2rem"
                   value={rounds}
                   onChange={(value) => setRounds(parseInt(value))}
-                  max={Object.keys(tracks).length + 1}
+                  max={tracks.length + 1}
                 >
                   <NumberInputField />
                 </NumberInput>
                 <Slider
                   flex="1"
+                  maxW="250px"
                   focusThumbOnChange={false}
                   value={rounds}
                   onChange={(value) => setRounds(value)}
-                  max={Object.keys(tracks).length + 1}
+                  max={tracks.length + 1}
                 >
                   <SliderTrack>
                     <SliderFilledTrack />
@@ -251,9 +190,15 @@ const Host: any = ({ user }) => {
                   <SliderThumb fontSize="sm" boxSize="32px" children={rounds} />
                 </Slider>
               </Flex>
-              <Button colorScheme="green" onClick={() => startGame()}>
-                Start Game
-              </Button>
+              {tracks.length > 0 && (
+                <Button
+                  colorScheme="green"
+                  mt="10px"
+                  onClick={() => startGame()}
+                >
+                  Start Game
+                </Button>
+              )}
             </Box>
             <Box>
               <Heading suppressHydrationWarning pt="10px">
@@ -299,7 +244,7 @@ const Host: any = ({ user }) => {
           <Flex
             justifyContent="center"
             alignItems="center"
-            mt={10}
+            mt={5}
             gap={6}
             flexDir={['column', 'column', 'row']}
           >

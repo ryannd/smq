@@ -8,5 +8,6 @@ import { UserModule } from '../user/user.module';
   controllers: [TracksController],
   providers: [TracksService],
   imports: [SpotifyModule, UserModule],
+  exports: [TracksService],
 })
 export class TracksModule {}

@@ -9,47 +9,51 @@ export class TracksService {
     private readonly userService: UserService,
   ) {}
 
-  async getUserTopTracks(userId: string) {
+  async getUserTopTracksAll(userId: string) {
     await this.userService.setSpotifyUserToken(userId);
+    const topTracks = (await this.spotifyService.getMyTopTracks()).body;
+    if (topTracks.total > topTracks.limit) {
+      for (let i = 1; i < Math.ceil(topTracks.total / topTracks.limit); i++) {
+        const trackToAdd = (
+          await this.spotifyService.getMyTopTracks({
+            offset: topTracks.limit * i,
+          })
+        ).body;
 
-    const tracks = await this.spotifyService
-      .getMyTopTracks()
-      .then((data) => {
-        return data.body.items
-          .filter((track) => track.preview_url !== null)
-          .map((track) => {
-            const {
-              href,
-              id,
-              is_local,
-              name,
-              popularity,
-              preview_url,
-              track_number,
-              type,
-              uri,
-              album: { images },
-              artists,
-            } = track;
-            return {
-              href,
-              id,
-              is_local,
-              name,
-              popularity,
-              preview_url,
-              track_number,
-              type,
-              uri,
-              images,
-              artists,
-            };
-          });
-      })
-      .catch((err) => {
-        console.log(err);
+        trackToAdd.items.forEach((item) => topTracks.items.push(item));
+      }
+    }
+    const tracks = topTracks.items
+      .filter((track) => track.preview_url !== null)
+      .map((track) => {
+        const {
+          href,
+          id,
+          is_local,
+          name,
+          popularity,
+          preview_url,
+          track_number,
+          type,
+          uri,
+          album: { images },
+          artists,
+        } = track;
+        return {
+          href,
+          id,
+          is_local,
+          name,
+          popularity,
+          preview_url,
+          track_number,
+          type,
+          uri,
+          images,
+          artists,
+        };
       });
-    console.log(tracks);
+
     if (!tracks) {
       throw new HttpException('Error fetching tracks.', HttpStatus.BAD_REQUEST);
     }
@@ -59,47 +63,55 @@ export class TracksService {
 
   async getPlaylistFromId(playlistId: string, userId: string) {
     await this.userService.setSpotifyUserToken(userId);
-    let title;
-    const tracks = await this.spotifyService
-      .getPlaylist(playlistId)
-      .then((data) => {
-        title = data.body.name;
-        return data.body.tracks.items
-          .filter((track) => track.track.preview_url !== null)
-          .map((obj) => {
-            const {
-              href,
-              id,
-              is_local,
-              name,
-              popularity,
-              preview_url,
-              track_number,
-              type,
-              uri,
-              album: { images },
-              artists,
-            } = obj.track;
-            return {
-              href,
-              id,
-              is_local,
-              name,
-              popularity,
-              preview_url,
-              track_number,
-              type,
-              uri,
-              images,
-              artists,
-            };
-          });
-      })
-      .catch((err) => {
-        throw new HttpException(
-          'Error fetching playlist tracks.',
-          HttpStatus.BAD_REQUEST,
-        );
+    const playlist = (
+      await this.spotifyService.getPlaylist(playlistId, { market: 'US' })
+    ).body;
+    const title = playlist.name;
+    if (playlist.tracks.total > playlist.tracks.limit) {
+      for (
+        let i = 1;
+        i < Math.ceil(playlist.tracks.total / playlist.tracks.limit);
+        i++
+      ) {
+        const trackToAdd = (
+          await this.spotifyService.getPlaylistTracks(playlistId, {
+            offset: playlist.tracks.limit * i,
+            market: 'US',
+          })
+        ).body;
+
+        trackToAdd.items.forEach((item) => playlist.tracks.items.push(item));
+      }
+    }
+    const tracks = playlist.tracks.items
+      .filter((track) => track.track.preview_url !== null)
+      .map((obj) => {
+        const {
+          href,
+          id,
+          is_local,
+          name,
+          popularity,
+          preview_url,
+          track_number,
+          type,
+          uri,
+          album: { images },
+          artists,
+        } = obj.track;
+        return {
+          href,
+          id,
+          is_local,
+          name,
+          popularity,
+          preview_url,
+          track_number,
+          type,
+          uri,
+          images,
+          artists,
+        };
       });
     return {
       title,

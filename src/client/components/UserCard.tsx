@@ -1,10 +1,13 @@
 import {
   Avatar,
+  Badge,
   Box,
   Center,
   Heading,
+  Text,
   useColorModeValue,
 } from '@chakra-ui/react';
+import { BsCheckLg, BsXLg } from 'react-icons/bs';
 
 export default function SocialProfileWithImage({ user }) {
   if (!user) return;
@@ -36,6 +39,20 @@ export default function SocialProfileWithImage({ user }) {
         >
           {user.user.name}
         </Heading>
+        {user.answer !== '' && (
+          <>
+            <Text isTruncated>{user.answer}</Text>
+            {user.isAnswerCorrect ? (
+              <Badge ml="1" fontSize="0.8em" colorScheme="green">
+                <BsCheckLg />
+              </Badge>
+            ) : (
+              <Badge ml="1" fontSize="0.8em" colorScheme="red">
+                <BsXLg />
+              </Badge>
+            )}
+          </>
+        )}
         <Heading
           textAlign={'center'}
           color={useColorModeValue('gray.700', 'gray.400')}

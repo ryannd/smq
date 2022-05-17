@@ -11,48 +11,20 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   const [showTitle, setShowTitle] = useState(false);
   const [answer, setAnswer] = useState('');
   const [answerSave, setAnswerSave] = useState('');
-  const [points, setPoints] = useState(false);
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState(false);
   useEffect(() => {
-    setTrackFill(
-      Object.keys(allTracks).map((t) => ({ value: t.toLowerCase(), label: t })),
-    );
+    setTrackFill(allTracks.map((t) => ({ value: t.toLowerCase(), label: t })));
   }, [allTracks]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.off('newRound');
-    socket.off('showTitle');
-    socket.off('finalAnswer');
 
     socket.on('newRound', (s) => {
       setShowTitle(false);
-      socket.emit('roundAnswer', {
-        user: {
-          name: user.body.display_name,
-          pic: user.body.images[0] || null,
-          url: user.body.external_urls.spotify,
-          id: user.body.id,
-        },
-        answer: points,
-        id,
-      });
       setAnswer('');
       setAnswerSave('');
-      setPoints((p) => false);
+      setIsAnswerCorrect((p) => false);
       setGameTime(20);
-    });
-
-    socket.on('finalAnswer', () => {
-      socket.emit('roundAnswer', {
-        user: {
-          name: user.body.display_name,
-          pic: user.body.images[0] || null,
-          url: user.body.external_urls.spotify,
-          id: user.body.id,
-        },
-        answer: points,
-        id,
-      });
     });
 
     socket.on('roundStartTick', (s) => {
@@ -60,8 +32,26 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
     });
     socket.on('showTitle', () => {
       setShowTitle(true);
+      setOpenMenu(false);
+      socket.emit('roundAnswer', {
+        user: {
+          name: user.body.display_name,
+          pic: user.body.images[0] || null,
+          url: user.body.external_urls.spotify,
+          id: user.body.id,
+        },
+        isAnswerCorrect,
+        answer: answerSave,
+        id,
+      });
     });
-  }, [socket, points, answerSave]);
+
+    return () => {
+      socket.off('newRound');
+      socket.off('showTitle');
+      socket.off('roundStartTick');
+    };
+  }, [socket, isAnswerCorrect, answerSave]);
 
   const AnswerCheck = () => {
     return answerSave === currentSong.name ? (
@@ -150,7 +140,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
                 if (!showTitle) {
                   setAnswer(value);
                   setAnswerSave(label);
-                  setPoints((p) => label === currentSong.name);
+                  setIsAnswerCorrect((p) => label === currentSong.name);
                 } else {
                   setAnswer('');
                   setAnswerSave('');
