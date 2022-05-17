@@ -32,6 +32,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
     });
     socket.on('showTitle', () => {
       setShowTitle(true);
+      setOpenMenu(false);
       socket.emit('roundAnswer', {
         user: {
           name: user.body.display_name,

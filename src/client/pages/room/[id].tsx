@@ -14,7 +14,6 @@ const NonHost: any = ({ user }) => {
   const [gameType, setGameType] = useState('topTracks');
   const [socket, setSocket] = useState(null);
   const [allTracks, setAllTracks] = useState([]);
-  const [tracks, setTracks] = useState({});
   const [startTime, setStartTime] = useState(10);
   const [currentSong, setCurrentSong] = useState<any>();
   const [users, setUsers] = useState([]);
@@ -29,9 +28,6 @@ const NonHost: any = ({ user }) => {
     socketIo.on('updateRoom', (s) => {
       setUsers((prev) => {
         return [...Object.values(s.users)];
-      });
-      setTracks((prev) => {
-        return [...s.tracks];
       });
       setAllTracks((prev) => {
         return s.allTrackTitles;
@@ -50,20 +46,44 @@ const NonHost: any = ({ user }) => {
     socketIo.on('endGame', (s) => {
       setGameState('end');
     });
-  }, []);
+    socketIo.on('topTracks', async (s) => {
+      console.log('Recieved top tracks message.');
+      setGameType('topTracks');
+    });
 
-  useEffect(() => {
-    if (!socket) return;
-  }, [socket]);
+    socketIo.on('playlist', (s) => {
+      setGameType('playlist');
+      setPlaylistTitle(s);
+      console.log(s);
+    });
+
+    socketIo.on('timerStartTick', (s) => {
+      setGameState('prep');
+      setStartTime(s);
+    });
+
+    socketIo.on('changeSong', (s) => {
+      setGameState('game');
+      setCurrentSong(s);
+    });
+
+    socketIo.on('startAll', (s) => {
+      setGameState('game');
+    });
+
+    socketIo.on('startAll', (s) => {
+      setGameState('game');
+    });
+
+    socketIo.on('changeSong', (s) => {
+      setCurrentSong(s);
+    });
+  }, []);
 
   useEffect(() => {
     if (!id) return;
     if (!user) return;
     if (!socket) return;
-    socket.off('playlist');
-    socket.off('tracks');
-    socket.off('roundDone');
-    socket.off('startAll');
 
     socket.emit('joinRoom', {
       id,
@@ -75,38 +95,7 @@ const NonHost: any = ({ user }) => {
       },
     });
 
-    socket.on('topTracks', async (s) => {
-      console.log('Recieved top tracks message.');
-      setGameType('topTracks');
-    });
-
-    socket.on('playlist', (s) => {
-      setGameType('playlist');
-      setPlaylistTitle(s);
-      console.log(s);
-    });
-
-    socket.on('timerStartTick', (s) => {
-      setGameState('prep');
-      setStartTime(s);
-    });
-
-    socket.on('changeSong', (s) => {
-      setGameState('game');
-      setCurrentSong(s);
-    });
-
-    socket.on('startAll', (s) => {
-      setGameState('game');
-    });
-
-    socket.on('startAll', (s) => {
-      setGameState('game');
-    });
-
-    socket.on('changeSong', (s) => {
-      setCurrentSong(s);
-    });
+    return () => socket.off('joinRoom');
   }, [id, user]);
 
   const content = () => {

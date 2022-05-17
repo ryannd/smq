@@ -59,6 +59,7 @@ export class GameGateway
       if (!spotifyIdToRoomId.has(user.id)) {
         rooms.get(id).users[user.id] = newUser;
       }
+      spotifyIdToRoomId.set(user.id, id);
       socketToSpotifyId.set(client.id, user.id);
       this.server.to(id).emit('updateRoom', rooms.get(id));
     }
@@ -272,6 +273,7 @@ export class GameGateway
       rooms.delete(room);
     } else {
       const room = spotifyIdToRoomId.get(spotify);
+      delete rooms.get(room).users[spotify];
       this.server.to(room).emit('updateRoom', rooms.get(room));
       spotifyIdToRoomId.delete(spotify);
     }
