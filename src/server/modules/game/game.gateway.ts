@@ -19,7 +19,7 @@ const rooms = new Map<string, SocketRoom>();
 // get host room
 const hostToRoomId = new Map<string, string>();
 // only allow user to be in 1 room at a time
-const isUserInRoom = new Map<string, boolean>();
+const spotifyIdToRoomId = new Map<string, string>();
 // map socketio client id to spotify user id
 const socketToSpotifyId = new Map<string, string>();
 // timer countdown interval
@@ -35,7 +35,7 @@ export class GameGateway
 {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
-  constructor(private tracksClient: TracksService){}
+  constructor(private tracksClient: TracksService) {}
 
   @SubscribeMessage('joinRoom')
   async joinRoom(
@@ -48,14 +48,14 @@ export class GameGateway
       this.server.to(client.id).emit('roomDoesNotExist');
     } else {
       await client.join(id);
-      const newUser:SocketUser = {
+      const newUser: SocketUser = {
         user,
         score: 0,
         voteSkip: false,
         answer: '',
-        id: user.id
+        id: user.id,
       };
-      if (!isUserInRoom.has(user.id)) {
+      if (!spotifyIdToRoomId.has(user.id)) {
         rooms.get(id).users[user.id] = newUser;
       }
       socketToSpotifyId.set(client.id, user.id);
@@ -78,7 +78,7 @@ export class GameGateway
     client: Socket,
   ) {
     await client.join(id);
-    const newUser:SocketUser = {
+    const newUser: SocketUser = {
       user,
       score: 0,
       voteSkip: false,
@@ -86,46 +86,57 @@ export class GameGateway
       id: user.id,
     };
     console.log('Host join room.');
-    if (!isUserInRoom.has(user.id)) {
+    if (!spotifyIdToRoomId.has(user.id)) {
       rooms.set(id, {
         host: user.id,
         users: {},
         tracks: [],
+        allTrackTitles: [],
       });
       rooms.get(id).users[user.id] = newUser;
-      isUserInRoom.set(user.id, true);
+      spotifyIdToRoomId.set(user.id, id);
       socketToSpotifyId.set(client.id, user.id);
       hostToRoomId.set(user.id, id);
       console.log('User added.');
     }
 
-    this.server.to(id).emit('playerJoined', rooms.get(id));
+    this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   @SubscribeMessage('hostTopTracks')
-  topTracksMessage(@MessageBody('id') id: string) {
+  async topTracksMessage(@MessageBody('id') id: string) {
+    const room = rooms.get(id);
+    const tracks = await Promise.all(
+      Object.keys(room.users).map(async (userId) => {
+        return await this.tracksClient.getUserTopTracksAll(userId);
+      }),
+    );
+    room.tracks = tracks.flat();
+    room.tracks = room.tracks.filter(
+      (value, index, self) =>
+        index === self.findIndex((t) => t.id === value.id),
+    );
+    room.allTrackTitles = room.tracks.map((v) => v.name);
     this.server.to(id).emit('topTracks');
+    this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   @SubscribeMessage('hostPlaylist')
   async playlistMessage(
     @MessageBody('id') id: string,
-    @MessageBody('title') title: string,
     @MessageBody('playlistId') playlistId: string,
     @ConnectedSocket()
-    client: Socket
+    client: Socket,
   ) {
-    this.server.to(id).emit('playlist', title);
-    const tracks = await this.tracksClient.getPlaylistFromId(playlistId, socketToSpotifyId.get(client.id))
+    const tracks = await this.tracksClient.getPlaylistFromId(
+      playlistId,
+      socketToSpotifyId.get(client.id),
+    );
+    this.server.to(id).emit('playlist', tracks.title);
     const room = rooms.get(id);
     room.tracks = tracks.tracks;
-    // remove duplicates (need test)
-    // room.tracks = room.tracks.filter((value,index,self) => {
-    //   index === self.findIndex((t) => {
-    //     t.id === value.id
-    //   })
-    // })
-    this.server.to(id).emit('tracks', room.tracks);
+    room.allTrackTitles = room.tracks.map((v) => v.name);
+    this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   @SubscribeMessage('tracks')
@@ -135,13 +146,13 @@ export class GameGateway
   ) {
     const room = rooms.get(id);
     room.tracks = room.tracks.concat(tracks);
-    // remove duplicates (need test)
-    // room.tracks = room.tracks.filter((value,index,self) => {
-    //   index === self.findIndex((t) => {
-    //     t.id === value.id
-    //   })
-    // })
-    this.server.to(id).emit('tracks', room.tracks);
+    room.tracks = room.tracks.filter((value, index, self) => {
+      index ===
+        self.findIndex((t) => {
+          t.id === value.id;
+        });
+    });
+    this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   @SubscribeMessage('startGame')
@@ -163,11 +174,15 @@ export class GameGateway
   }
 
   @SubscribeMessage('newSong')
-  changeSong(@MessageBody('song') song: any, @MessageBody('id') id: string) {
+  changeSong(@MessageBody('id') id: string) {
     const io = this.server;
     let count = 19;
+    const tracks = rooms.get(id).tracks;
+    const index = Math.floor(Math.random() * tracks.length);
+    const nextSong = tracks[index];
+    rooms.get(id).tracks.splice(index, 1);
 
-    this.server.to(id).emit('changeSong', song);
+    this.server.to(id).emit('changeSong', nextSong);
     this.server.to(id).emit('newRound');
 
     io.to(id).emit('roundStartTick', 20);
@@ -192,7 +207,7 @@ export class GameGateway
     const foundUser = rooms.get(id).users[user.id];
     const newScore = foundUser.score + (answer ? 10 : 0);
     foundUser.score = newScore;
-    this.server.to(id).emit('updateScore', rooms.get(id));
+    this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   @SubscribeMessage('endGame')
@@ -213,7 +228,8 @@ export class GameGateway
       };
     });
 
-    this.server.to(id).emit('newGame', rooms.get(id));
+    this.server.to(id).emit('updateRoom', rooms.get(id));
+    this.server.to(id).emit('newGame');
     clearInterval(roundCountdown);
   }
 
@@ -226,12 +242,16 @@ export class GameGateway
     if (hostToRoomId.has(spotify)) {
       const room = hostToRoomId.get(spotify);
       const users = rooms.get(room).users;
-      Object.keys(users).forEach((user) => isUserInRoom.delete(user));
+      Object.keys(users).forEach((user) => spotifyIdToRoomId.delete(user));
       this.server.to(room).emit('hostDisconnect');
       hostToRoomId.delete(spotify);
       rooms.delete(room);
+    } else {
+      const room = spotifyIdToRoomId.get(spotify);
+      this.server.to(room).emit('updateRoom', rooms.get(room));
+      spotifyIdToRoomId.delete(spotify);
     }
-    isUserInRoom.delete(spotify);
+
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 

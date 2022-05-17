@@ -1,4 +1,4 @@
-import { SocketUser } from "./SocketUser";
+import { SocketUser } from './SocketUser';
 
 export type SocketRoom = {
   host: string;
@@ -6,4 +6,5 @@ export type SocketRoom = {
     [key: string]: SocketUser;
   };
   tracks: any[];
+  allTrackTitles: string[];
 };

@@ -13,9 +13,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   const [answerSave, setAnswerSave] = useState('');
   const [points, setPoints] = useState(false);
   useEffect(() => {
-    setTrackFill(
-      Object.keys(allTracks).map((t) => ({ value: t.toLowerCase(), label: t })),
-    );
+    setTrackFill(allTracks.map((t) => ({ value: t.toLowerCase(), label: t })));
   }, [allTracks]);
 
   useEffect(() => {

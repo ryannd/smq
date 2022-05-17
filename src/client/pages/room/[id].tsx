@@ -2,7 +2,6 @@ import { Box, Flex, Heading } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import fetcher from '../../utils/fetcher';
 import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
 
@@ -26,38 +25,25 @@ const NonHost: any = ({ user }) => {
   useEffect(() => {
     const socketIo = io();
     setSocket(socketIo);
-    socketIo.on('updateScore', (s) => {
+
+    socketIo.on('updateRoom', (s) => {
       setUsers((prev) => {
         return [...Object.values(s.users)];
+      });
+      setTracks((prev) => {
+        return [...s.tracks];
       });
     });
+
     socketIo.on('newGame', (s) => {
       setGameState('wait');
-      setUsers((prev) => {
-        return [...Object.values(s.users)];
-      });
     });
     socketIo.on('hostDisconnect', () => {
       setGameState('disconnect');
     });
-    socketIo.on('userDisconnect', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
-    });
     socketIo.on('roomDoesNotExist', () => {
       setGameState('notExist');
     });
-
-    socket.on('playerJoined', (s) => {
-      if (s !== undefined) {
-        console.log(s);
-        setUsers((prev) => {
-          return [...Object.values(s.users)];
-        });
-      }
-    });
-
     socketIo.on('endGame', (s) => {
       setGameState('end');
     });
@@ -65,16 +51,6 @@ const NonHost: any = ({ user }) => {
 
   useEffect(() => {
     if (!socket) return;
-    socket.off('roundDone');
-    socket.off('startAll');
-
-    socket.on('startAll', (s) => {
-      setGameState('game');
-    });
-
-    socket.on('changeSong', (s) => {
-      setCurrentSong(s);
-    });
   }, [socket]);
 
   useEffect(() => {
@@ -83,6 +59,9 @@ const NonHost: any = ({ user }) => {
     if (!socket) return;
     socket.off('playlist');
     socket.off('tracks');
+    socket.off('roundDone');
+    socket.off('startAll');
+
     socket.emit('joinRoom', {
       id,
       user: {
@@ -92,39 +71,16 @@ const NonHost: any = ({ user }) => {
         id: user.body.id,
       },
     });
-    socket.emit('updateScore', (s) => {
-      setUsers((prev) => {
-        return [...s];
-      });
-    });
+
     socket.on('topTracks', async (s) => {
       console.log('Recieved top tracks message.');
       setGameType('topTracks');
-      setTracks({});
-      const data = await fetcher('/api/tracks/top');
-      console.log(data);
-      data.forEach((track) => {
-        addItem(track);
-      });
-      socket.emit('tracks', { id, tracks: data });
-    });
-    socket.on('playlist', (s) => {
-      setGameType('playlist');
-      setTracks({});
-      setPlaylistTitle(s);
-      console.log(s);
     });
 
-    socket.on('tracks', async (s) => {
+    socket.on('playlist', (s) => {
+      setGameType('playlist');
+      setPlaylistTitle(s);
       console.log(s);
-      if (s !== null) {
-        console.log('Recieved tracks.');
-        if (s.length > 0) {
-          s.forEach((track) => {
-            addItem(track);
-          });
-        }
-      }
     });
 
     socket.on('timerStartTick', (s) => {
@@ -133,36 +89,22 @@ const NonHost: any = ({ user }) => {
     });
 
     socket.on('changeSong', (s) => {
-      if (s !== null) {
-        setGameState('game');
-
-        setCurrentSong(s);
-        setTracks((prev) => {
-          const newTracks = Object.assign({}, prev);
-          delete newTracks[s.name];
-          return newTracks;
-        });
-      }
+      setGameState('game');
+      setCurrentSong(s);
     });
 
     socket.on('startAll', (s) => {
       setGameState('game');
     });
-  }, [id, user]);
 
-  const addItem = (item) => {
-    if (tracks[item.name] !== undefined) return;
-    setTracks((prev) => {
-      const newTracks = Object.assign({}, prev);
-      newTracks[item.name] = item;
-      return newTracks;
+    socket.on('startAll', (s) => {
+      setGameState('game');
     });
-    setAllTracks((prev) => {
-      const newTracks = Object.assign({}, prev);
-      newTracks[item.name] = item;
-      return newTracks;
+
+    socket.on('changeSong', (s) => {
+      setCurrentSong(s);
     });
-  };
+  }, [id, user]);
 
   const content = () => {
     switch (gameState) {

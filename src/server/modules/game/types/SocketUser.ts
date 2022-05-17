@@ -1,12 +1,12 @@
 export type SocketUser = {
-    user: {
-        name: string;
-        pic?: string;
-        url: string;
-        id: string;
-    };
+  user: {
+    name: string;
+    pic?: string;
+    url: string;
     id: string;
-    voteSkip: boolean;
-    answer: string;
-    score: number;
-}
+  };
+  id: string;
+  voteSkip: boolean;
+  answer: string;
+  score: number;
+};

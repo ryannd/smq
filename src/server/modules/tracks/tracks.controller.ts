@@ -11,7 +11,7 @@ export class TracksController {
   @UseGuards(JwtAuthGuard)
   @Get('top')
   async getUserTopTracks(@Request() req) {
-    return await this.tracksService.getUserTopTracks(req.user.name);
+    return await this.tracksService.getUserTopTracksAll(req.user.name);
   }
 
   @UseGuards(JwtAuthGuard)

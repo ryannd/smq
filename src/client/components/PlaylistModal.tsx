@@ -12,7 +12,6 @@ import {
   FormErrorMessage,
 } from '@chakra-ui/react';
 import { useState } from 'react';
-import fetcher from '~client/utils/fetcher';
 
 const PlaylistModal = ({ isOpen, onClose, socket, room }) => {
   const [url, setUrl] = useState('');
@@ -23,8 +22,10 @@ const PlaylistModal = ({ isOpen, onClose, socket, room }) => {
       const id = urlObj.pathname.split('/');
       if (urlObj.hostname === 'open.spotify.com' && id[2] !== undefined) {
         setValid(true);
-        const playlist = await fetcher(`/api/tracks/playlist/${id[2]}`);
-        socket.emit('hostPlaylist', { id: room, title: playlist.title, playlistId: id[2] });
+        socket.emit('hostPlaylist', {
+          id: room,
+          playlistId: id[2],
+        });
         onClose();
       } else {
         setValid(false);
