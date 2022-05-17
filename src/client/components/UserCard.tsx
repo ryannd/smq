@@ -40,8 +40,8 @@ export default function SocialProfileWithImage({ user }) {
           {user.user.name}
         </Heading>
         {user.answer !== '' && (
-          <Text>
-            {user.answer}
+          <>
+            <Text isTruncated>{user.answer}</Text>
             {user.isAnswerCorrect ? (
               <Badge ml="1" fontSize="0.8em" colorScheme="green">
                 <BsCheckLg />
@@ -51,7 +51,7 @@ export default function SocialProfileWithImage({ user }) {
                 <BsXLg />
               </Badge>
             )}
-          </Text>
+          </>
         )}
         <Heading
           textAlign={'center'}

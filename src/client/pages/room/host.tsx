@@ -160,13 +160,13 @@ const Host: any = ({ user }) => {
               {gameType === 'playlist' && <Text>{playlistTitle}</Text>}
             </Box>
             <Box pb="50px">
-              <Box pb="10px">
+              <Box pb="10px" mb="10px">
                 <Button onClick={() => selectTopTracks()} mr="10px">
                   Top Tracks
                 </Button>
                 <Button onClick={onOpen}>Select a playlist</Button>
               </Box>
-              <Flex>
+              <Flex justifyContent="center">
                 <NumberInput
                   maxW="100px"
                   mr="2rem"
@@ -178,6 +178,7 @@ const Host: any = ({ user }) => {
                 </NumberInput>
                 <Slider
                   flex="1"
+                  maxW="250px"
                   focusThumbOnChange={false}
                   value={rounds}
                   onChange={(value) => setRounds(value)}
@@ -190,7 +191,11 @@ const Host: any = ({ user }) => {
                 </Slider>
               </Flex>
               {tracks.length > 0 && (
-                <Button colorScheme="green" onClick={() => startGame()}>
+                <Button
+                  colorScheme="green"
+                  mt="10px"
+                  onClick={() => startGame()}
+                >
                   Start Game
                 </Button>
               )}
@@ -239,7 +244,7 @@ const Host: any = ({ user }) => {
           <Flex
             justifyContent="center"
             alignItems="center"
-            mt={10}
+            mt={5}
             gap={6}
             flexDir={['column', 'column', 'row']}
           >

@@ -21,7 +21,15 @@ const Layout: React.FC<Props> = ({ children }: Props) => {
   });
 
   return (
-    <Flex alignContent="center" p="30px" flexDir="column" w="100vw" h="100vh">
+    <Flex
+      alignContent="center"
+      p="30px"
+      flexDir="column"
+      w="100vw"
+      h="100vh"
+      maxW="100vw"
+      maxH="100vh"
+    >
       <Header user={user} />
       <Center justifySelf="center" w="100%" h="100%">
         {error ? <NotLoggedIn /> : childrenWithUser}

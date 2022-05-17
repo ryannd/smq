@@ -222,7 +222,7 @@ export class GameGateway
     const foundUser = rooms.get(id).users[user.id];
     const newScore = foundUser.score + (isAnswerCorrect ? 10 : 0);
     foundUser.score = newScore;
-    foundUser.answer = answer;
+    foundUser.answer = answer !== '' ? answer : 'No answer';
     foundUser.isAnswerCorrect = isAnswerCorrect;
     this.server.to(id).emit('updateRoom', rooms.get(id));
   }

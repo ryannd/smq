@@ -143,7 +143,7 @@ const NonHost: any = ({ user }) => {
             <Flex
               justifyContent="center"
               alignItems="center"
-              mt={10}
+              mt={5}
               gap={6}
               flexDir={['column', 'column', 'row']}
             >
