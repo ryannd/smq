@@ -60,7 +60,7 @@ export class GameGateway
         rooms.get(id).users[user.id] = newUser;
       }
       socketToSpotifyId.set(client.id, user.id);
-      this.server.to(id).emit('playerJoined', rooms.get(id));
+      this.server.to(id).emit('updateRoom', rooms.get(id));
     }
   }
 
