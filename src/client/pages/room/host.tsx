@@ -138,13 +138,6 @@ const Host: any = ({ user }) => {
 
   const startGame = async () => {
     setGameState('prep');
-    switch (gameType) {
-      case 'topTracks':
-        selectTopTracks();
-        break;
-      case 'playlist':
-        break;
-    }
     socket.emit('startGame', { id: randomRoom });
   };
 
@@ -179,7 +172,7 @@ const Host: any = ({ user }) => {
                   mr="2rem"
                   value={rounds}
                   onChange={(value) => setRounds(parseInt(value))}
-                  max={Object.keys(tracks).length + 1}
+                  max={tracks.length + 1}
                 >
                   <NumberInputField />
                 </NumberInput>
@@ -188,7 +181,7 @@ const Host: any = ({ user }) => {
                   focusThumbOnChange={false}
                   value={rounds}
                   onChange={(value) => setRounds(value)}
-                  max={Object.keys(tracks).length + 1}
+                  max={tracks.length + 1}
                 >
                   <SliderTrack>
                     <SliderFilledTrack />

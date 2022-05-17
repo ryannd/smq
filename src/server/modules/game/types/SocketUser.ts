@@ -7,6 +7,7 @@ export type SocketUser = {
   };
   id: string;
   voteSkip: boolean;
+  isAnswerCorrect: boolean;
   answer: string;
   score: number;
 };

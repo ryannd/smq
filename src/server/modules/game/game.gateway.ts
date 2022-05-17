@@ -52,6 +52,7 @@ export class GameGateway
         user,
         score: 0,
         voteSkip: false,
+        isAnswerCorrect: false,
         answer: '',
         id: user.id,
       };
@@ -82,6 +83,7 @@ export class GameGateway
       user,
       score: 0,
       voteSkip: false,
+      isAnswerCorrect: false,
       answer: '',
       id: user.id,
     };
@@ -178,12 +180,23 @@ export class GameGateway
     const io = this.server;
     let count = 19;
     const tracks = rooms.get(id).tracks;
+    const users = rooms.get(id).users;
     const index = Math.floor(Math.random() * tracks.length);
     const nextSong = tracks[index];
     rooms.get(id).tracks.splice(index, 1);
 
     this.server.to(id).emit('changeSong', nextSong);
     this.server.to(id).emit('newRound');
+
+    Object.entries(users).forEach((entry) => {
+      const [key, val]: any = entry;
+      rooms.get(id).users[key] = {
+        ...val,
+        isAnswerCorrect: false,
+        answer: '',
+      };
+    });
+    this.server.to(id).emit('updateRoom', rooms.get(id));
 
     io.to(id).emit('roundStartTick', 20);
     roundCountdown = setInterval(function () {
@@ -201,19 +214,30 @@ export class GameGateway
   savePoints(
     @MessageBody('user') user,
     @MessageBody('id') id: string,
+    @MessageBody('isAnswerCorrect') isAnswerCorrect,
     @MessageBody('answer') answer,
     @ConnectedSocket() client: Socket,
   ) {
     const foundUser = rooms.get(id).users[user.id];
-    const newScore = foundUser.score + (answer ? 10 : 0);
+    const newScore = foundUser.score + (isAnswerCorrect ? 10 : 0);
     foundUser.score = newScore;
+    foundUser.answer = answer;
+    foundUser.isAnswerCorrect = isAnswerCorrect;
     this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   @SubscribeMessage('endGame')
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
-    this.server.to(id).emit('finalAnswer');
+    const users = rooms.get(id).users;
+    Object.entries(users).forEach((entry) => {
+      const [key, val]: any = entry;
+      rooms.get(id).users[key] = {
+        ...val,
+        answer: '',
+      };
+    });
+    this.server.to(id).emit('updateRoom', rooms.get(id));
     clearInterval(roundCountdown);
   }
 

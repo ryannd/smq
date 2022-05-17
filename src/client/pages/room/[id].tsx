@@ -13,7 +13,7 @@ const NonHost: any = ({ user }) => {
   const router = useRouter();
   const [gameType, setGameType] = useState('topTracks');
   const [socket, setSocket] = useState(null);
-  const [allTracks, setAllTracks] = useState({});
+  const [allTracks, setAllTracks] = useState([]);
   const [tracks, setTracks] = useState({});
   const [startTime, setStartTime] = useState(10);
   const [currentSong, setCurrentSong] = useState<any>();
@@ -32,6 +32,9 @@ const NonHost: any = ({ user }) => {
       });
       setTracks((prev) => {
         return [...s.tracks];
+      });
+      setAllTracks((prev) => {
+        return s.allTrackTitles;
       });
     });
 
