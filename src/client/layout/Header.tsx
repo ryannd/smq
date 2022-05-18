@@ -23,7 +23,7 @@ const Header: React.FC<Props> = ({ user }: Props) => {
           {user ? (
             <Link href="">
               <Button maxW={['75px', '100%']}>
-                <Text isTruncated>{user.body.display_name}</Text>
+                <Text noOfLines={1}>{user.body.display_name}</Text>
               </Button>
             </Link>
           ) : (
