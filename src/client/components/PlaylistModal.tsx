@@ -17,20 +17,16 @@ const PlaylistModal = ({ isOpen, onClose, socket, room }) => {
   const [url, setUrl] = useState('');
   const [valid, setValid] = useState(true);
   const handleSubmit = async () => {
-    try {
-      const urlObj = new URL(url);
-      const id = urlObj.pathname.split('/');
-      if (urlObj.hostname === 'open.spotify.com' && id[2] !== undefined) {
-        setValid(true);
-        socket.emit('hostPlaylist', {
-          id: room,
-          playlistId: id[2],
-        });
-        onClose();
-      } else {
-        setValid(false);
-      }
-    } catch {
+    const urlObj = new URL(url);
+    const id = urlObj.pathname.split('/');
+    if (urlObj.hostname === 'open.spotify.com' && id[2] !== undefined) {
+      setValid(true);
+      socket.emit('hostPlaylist', {
+        id: room,
+        playlistId: id[2],
+      });
+      onClose();
+    } else {
       setValid(false);
     }
   };

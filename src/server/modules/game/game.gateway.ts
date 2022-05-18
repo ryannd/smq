@@ -107,11 +107,19 @@ export class GameGateway
   }
 
   @SubscribeMessage('hostTopTracks')
-  async topTracksMessage(@MessageBody('id') id: string) {
+  async topTracksMessage(
+    @MessageBody('id') id: string,
+    @MessageBody('timeRange') timeRange: string,
+    @MessageBody('limit') limit: number,
+  ) {
     const room = rooms.get(id);
     const tracks = await Promise.all(
       Object.keys(room.users).map(async (userId) => {
-        return await this.tracksClient.getUserTopTracksAll(userId);
+        return await this.tracksClient.getUserTopTracks(
+          userId,
+          timeRange,
+          limit,
+        );
       }),
     );
     room.tracks = tracks.flat();

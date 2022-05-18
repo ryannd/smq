@@ -61,6 +61,51 @@ export class TracksService {
     return tracks;
   }
 
+  async getUserTopTracks(userId: string, timeRange: string, limit: number) {
+    await this.userService.setSpotifyUserToken(userId);
+    console.log(timeRange + limit);
+    const topTracks = await this.spotifyService.getMyTopTracks({
+      time_range: timeRange,
+      limit,
+    });
+    const tracks = topTracks.body.items
+      .filter((track) => track.preview_url !== null)
+      .map((track) => {
+        const {
+          href,
+          id,
+          is_local,
+          name,
+          popularity,
+          preview_url,
+          track_number,
+          type,
+          uri,
+          album: { images },
+          artists,
+        } = track;
+        return {
+          href,
+          id,
+          is_local,
+          name,
+          popularity,
+          preview_url,
+          track_number,
+          type,
+          uri,
+          images,
+          artists,
+        };
+      });
+
+    if (!tracks) {
+      throw new HttpException('Error fetching tracks.', HttpStatus.BAD_REQUEST);
+    }
+
+    return tracks;
+  }
+
   async getPlaylistFromId(playlistId: string, userId: string) {
     await this.userService.setSpotifyUserToken(userId);
     const playlist = (

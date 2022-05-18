@@ -17,6 +17,7 @@ import { io } from 'socket.io-client';
 import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
 import PlaylistModal from '~client/components/PlaylistModal';
+import TopTracksModal from '~client/components/TopTracksModal';
 
 const strings = {
   topTracks: 'Top Tracks',
@@ -25,7 +26,7 @@ const strings = {
 
 const Host: any = ({ user }) => {
   const [socket, setSocket] = useState(null);
-  const [gameType, setGameType] = useState('topTracks');
+  const [gameType, setGameType] = useState('');
   const [tracks, setTracks] = useState([]);
   const [allTracks, setAllTracks] = useState([]);
   const [startTime, setStartTime] = useState(5);
@@ -37,7 +38,16 @@ const Host: any = ({ user }) => {
   );
   const [hideSkip, setHideSkip] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState('');
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isOpenPlaylist,
+    onOpen: onOpenPlaylist,
+    onClose: onClosePlaylist,
+  } = useDisclosure();
+  const {
+    isOpen: isOpenTop,
+    onOpen: onOpenTop,
+    onClose: onCloseTop,
+  } = useDisclosure();
   const [rounds, setRounds] = useState(0);
 
   useEffect(() => {
@@ -76,6 +86,14 @@ const Host: any = ({ user }) => {
     socketIo.on('timerStartTick', (s) => {
       setStartTime(s);
     });
+
+    socketIo.on('changeSong', (s) => {
+      setCurrentSong(s);
+    });
+
+    socketIo.on('topTracks', (s) => {
+      setGameType('topTracks');
+    });
   }, []);
 
   useEffect(() => {
@@ -95,6 +113,8 @@ const Host: any = ({ user }) => {
         id: user.body.id,
       },
     });
+
+    return () => socket.off('hostJoinRoom');
   }, [randomRoom, user, socket]);
 
   useEffect(() => {
@@ -107,9 +127,7 @@ const Host: any = ({ user }) => {
       socket.emit('newSong', { id: randomRoom });
     });
 
-    socket.on('changeSong', (s) => {
-      setCurrentSong(s);
-    });
+    return () => socket.off('startAll');
   }, [randomRoom, socket]);
 
   useEffect(() => {
@@ -130,11 +148,6 @@ const Host: any = ({ user }) => {
     });
     return () => socket.off('roundDone');
   }, [randomRoom, socket, rounds]);
-
-  const selectTopTracks = () => {
-    socket.emit('hostTopTracks', { id: randomRoom });
-    setGameType('topTracks');
-  };
 
   const startGame = async () => {
     setGameState('prep');
@@ -161,10 +174,10 @@ const Host: any = ({ user }) => {
             </Box>
             <Box pb="50px">
               <Box pb="10px" mb="10px">
-                <Button onClick={() => selectTopTracks()} mr="10px">
+                <Button onClick={onOpenTop} mr="10px">
                   Top Tracks
                 </Button>
-                <Button onClick={onOpen}>Select a playlist</Button>
+                <Button onClick={onOpenPlaylist}>Select a playlist</Button>
               </Box>
               <Flex justifyContent="center">
                 <NumberInput
@@ -256,8 +269,15 @@ const Host: any = ({ user }) => {
         </Box>
       </Flex>
       <PlaylistModal
-        isOpen={isOpen}
-        onClose={onClose}
+        isOpen={isOpenPlaylist}
+        onClose={onClosePlaylist}
+        socket={socket}
+        room={randomRoom}
+      />
+      <TopTracksModal
+        isOpen={isOpenTop}
+        onClose={onCloseTop}
+        onOpen={onOpenTop}
         socket={socket}
         room={randomRoom}
       />

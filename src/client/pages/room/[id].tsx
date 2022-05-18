@@ -11,7 +11,7 @@ const strings = {
 
 const NonHost: any = ({ user }) => {
   const router = useRouter();
-  const [gameType, setGameType] = useState('topTracks');
+  const [gameType, setGameType] = useState('');
   const [socket, setSocket] = useState(null);
   const [allTracks, setAllTracks] = useState([]);
   const [startTime, setStartTime] = useState(10);
@@ -46,8 +46,7 @@ const NonHost: any = ({ user }) => {
     socketIo.on('endGame', (s) => {
       setGameState('end');
     });
-    socketIo.on('topTracks', async (s) => {
-      console.log('Recieved top tracks message.');
+    socketIo.on('topTracks', (s) => {
       setGameType('topTracks');
     });
 
