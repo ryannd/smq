@@ -170,7 +170,7 @@ export class GameGateway
   startTimer(@MessageBody('id') id: string) {
     const io = this.server;
     const room = rooms.get(id);
-    this.server.to(id).emit('tracks', room.tracks);
+    this.server.to(id).emit('updateRoom', room);
     this.server.to(id).emit('gameTimerStart');
 
     let count = 5;
