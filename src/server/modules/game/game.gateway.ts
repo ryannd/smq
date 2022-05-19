@@ -66,12 +66,28 @@ export class GameGateway
     }
   }
 
-  @SubscribeMessage('hostSkip')
-  skipSong(@MessageBody('id') id: string) {
-    this.logger.log(`Host skipped song in room: ${id}`);
-    this.server.to(id).emit('roundDone');
-    this.server.to(id).emit('showTitle');
-    clearInterval(roundCountdown);
+  @SubscribeMessage('skipSong')
+  skipSong(@MessageBody('id') id: string, @ConnectedSocket() client: Socket) {
+    const spotify = socketToSpotifyId.get(client.id);
+    const users = rooms.get(id).users;
+    users[spotify].voteSkip = true;
+
+    this.server.to(id).emit('updateRoom', rooms.get(id));
+
+    const numUsers = Object.entries(users).length;
+    let count = 0;
+    for (let i = 0; i < numUsers; i++) {
+      if (Object.values(users)[i].voteSkip) {
+        count++;
+      }
+    }
+
+    if (count == numUsers) {
+      this.logger.log(`Skipped song in room: ${id}`);
+      this.server.to(id).emit('roundDone');
+      this.server.to(id).emit('showTitle');
+      clearInterval(roundCountdown);
+    }
   }
 
   @SubscribeMessage('hostJoinRoom')
@@ -97,6 +113,7 @@ export class GameGateway
         users: {},
         tracks: [],
         allTrackTitles: [],
+        inGame: false,
       });
       rooms.get(id).users[user.id] = newUser;
       spotifyIdToRoomId.set(user.id, id);
@@ -159,6 +176,7 @@ export class GameGateway
   startTimer(@MessageBody('id') id: string) {
     const io = this.server;
     const room = rooms.get(id);
+    room.inGame = true;
     this.server.to(id).emit('updateRoom', room);
 
     this.logger.log(`Room ${id} has begun their game.`);
@@ -194,6 +212,7 @@ export class GameGateway
         ...val,
         isAnswerCorrect: false,
         answer: '',
+        voteSkip: false,
       };
     });
     this.server.to(id).emit('updateRoom', rooms.get(id));
@@ -235,8 +254,10 @@ export class GameGateway
       rooms.get(id).users[key] = {
         ...val,
         answer: '',
+        voteSkip: false,
       };
     });
+    rooms.get(id).inGame = false;
     this.logger.log(`Room ${id} has ended their game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
     clearInterval(roundCountdown);

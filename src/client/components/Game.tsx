@@ -1,4 +1,4 @@
-import { Badge, Box, Heading, Image } from '@chakra-ui/react';
+import { Badge, Box, Button, Heading, Image } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import AudioPlayer, { RHAP_UI } from 'react-h5-audio-player';
 import { Select } from 'chakra-react-select';
@@ -11,6 +11,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   const [openMenu, setOpenMenu] = useState(false);
   const [gameTime, setGameTime] = useState(20);
   const [showTitle, setShowTitle] = useState(false);
+  const [showSkip, setShowSkip] = useState(true);
   const [answer, setAnswer] = useState('');
   const [answerSave, setAnswerSave] = useState('');
   const [isAnswerCorrect, setIsAnswerCorrect] = useState(false);
@@ -25,6 +26,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setShowTitle(false);
       setAnswer('');
       setAnswerSave('');
+      setShowSkip(true);
       setIsAnswerCorrect((p) => false);
       setGameTime(20);
     });
@@ -54,6 +56,11 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       socket.off('roundStartTick');
     };
   }, [socket, isAnswerCorrect, answerSave]);
+
+  const skipSong = () => {
+    socket.emit('skipSong', { id });
+    setShowSkip(false);
+  };
 
   const AnswerCheck = () => {
     return answerSave === currentSong.name ? (
@@ -154,6 +161,16 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               blurInputOnSelect
               menuIsOpen={openMenu}
             />
+            {showSkip && (
+              <Button
+                w={['100%', '640px']}
+                onClick={() => skipSong()}
+                mt="10px"
+                colorScheme="red"
+              >
+                Vote Skip
+              </Button>
+            )}
           </Box>
         </Box>
       )}

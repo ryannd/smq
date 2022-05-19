@@ -7,4 +7,5 @@ export type SocketRoom = {
   };
   tracks: any[];
   allTrackTitles: string[];
+  inGame: boolean;
 };

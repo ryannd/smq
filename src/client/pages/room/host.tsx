@@ -232,11 +232,6 @@ const Host: any = ({ user }) => {
       case 'game':
         return (
           <>
-            {!hideSkip && (
-              <Button onClick={() => skipSong()} mb="10px" colorScheme="red">
-                Skip
-              </Button>
-            )}
             <Game
               currentSong={currentSong}
               allTracks={allTracks}

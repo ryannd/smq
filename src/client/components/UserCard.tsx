@@ -1,5 +1,6 @@
 import {
   Avatar,
+  AvatarBadge,
   Badge,
   Box,
   Center,
@@ -30,7 +31,9 @@ export default function SocialProfileWithImage({ user }) {
           src={user.user.pic ? user.user.pic.url : ''}
           mb={[0, 0, 2]}
           pos={'relative'}
-        />
+        >
+          {user.voteSkip && <AvatarBadge boxSize="1.25em" bg="red.500" />}
+        </Avatar>
         <Heading
           fontSize={'2xl'}
           fontFamily={'body'}
