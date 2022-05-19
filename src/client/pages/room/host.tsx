@@ -48,7 +48,7 @@ const Host: any = ({ user }) => {
     onOpen: onOpenTop,
     onClose: onCloseTop,
   } = useDisclosure();
-  const [rounds, setRounds] = useState(0);
+  const [rounds, setRounds] = useState(1);
 
   useEffect(() => {
     const socketIo = io();
@@ -78,7 +78,7 @@ const Host: any = ({ user }) => {
     socketIo.on('newGame', (s) => {
       setStartTime(5);
       setHideSkip(false);
-      setRounds(0);
+      setRounds(1);
       setGameState('select');
     });
 
@@ -175,40 +175,49 @@ const Host: any = ({ user }) => {
                 </Button>
                 <Button onClick={onOpenPlaylist}>Select a playlist</Button>
               </Box>
-              <Flex justifyContent="center">
-                <NumberInput
-                  maxW="100px"
-                  mr="2rem"
-                  value={rounds}
-                  onChange={(value) => setRounds(parseInt(value))}
-                  min={1}
-                  max={tracks.length}
-                >
-                  <NumberInputField />
-                </NumberInput>
-                <Slider
-                  flex="1"
-                  maxW="250px"
-                  focusThumbOnChange={false}
-                  value={rounds}
-                  onChange={(value) => setRounds(value)}
-                  min={1}
-                  max={tracks.length}
-                >
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb fontSize="sm" boxSize="32px" children={rounds} />
-                </Slider>
-              </Flex>
-              {tracks.length > 0 && (
-                <Button
-                  colorScheme="green"
-                  mt="10px"
-                  onClick={() => startGame()}
-                >
-                  Start Game
-                </Button>
+              {tracks.length > 0 && allTracks.length === tracks.length && (
+                <>
+                  <Text fontSize="lg" mb="5px">
+                    Set number of rounds
+                  </Text>
+                  <Flex justifyContent="center">
+                    <NumberInput
+                      maxW="100px"
+                      mr="2rem"
+                      value={rounds}
+                      onChange={(value) => setRounds(parseInt(value))}
+                      min={1}
+                      max={tracks.length}
+                    >
+                      <NumberInputField />
+                    </NumberInput>
+                    <Slider
+                      flex="1"
+                      maxW="250px"
+                      focusThumbOnChange={false}
+                      value={rounds}
+                      onChange={(value) => setRounds(value)}
+                      min={1}
+                      max={tracks.length}
+                    >
+                      <SliderTrack>
+                        <SliderFilledTrack />
+                      </SliderTrack>
+                      <SliderThumb
+                        fontSize="sm"
+                        boxSize="32px"
+                        children={rounds}
+                      />
+                    </Slider>
+                  </Flex>
+                  <Button
+                    colorScheme="green"
+                    mt="10px"
+                    onClick={() => startGame()}
+                  >
+                    Start Game
+                  </Button>
+                </>
               )}
             </Box>
             <Box>
