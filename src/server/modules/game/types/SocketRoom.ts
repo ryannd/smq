@@ -5,6 +5,7 @@ export type SocketRoom = {
   users: {
     [key: string]: SocketUser;
   };
+  waitingRoom: SocketUser[];
   tracks: any[];
   allTrackTitles: string[];
   inGame: boolean;

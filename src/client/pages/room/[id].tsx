@@ -1,4 +1,4 @@
-import { Box, Flex, Heading } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
@@ -19,6 +19,7 @@ const NonHost: any = ({ user }) => {
   const [users, setUsers] = useState([]);
   const [gameState, setGameState] = useState('wait');
   const [playlistTitle, setPlaylistTitle] = useState('');
+  const [waitingRoom, setWaitingRoom] = useState([]);
   const { id } = router.query;
 
   useEffect(() => {
@@ -31,6 +32,9 @@ const NonHost: any = ({ user }) => {
       });
       setAllTracks((prev) => {
         return s.allTrackTitles;
+      });
+      setWaitingRoom((prev) => {
+        return s.waitingRoom;
       });
     });
 
@@ -61,20 +65,17 @@ const NonHost: any = ({ user }) => {
     });
 
     socketIo.on('changeSong', (s) => {
-      setGameState('game');
       setCurrentSong(s);
     });
 
     socketIo.on('startAll', (s) => {
-      setGameState('game');
+      if (gameState !== 'waitround') {
+        setGameState('game');
+      }
     });
 
-    socketIo.on('startAll', (s) => {
-      setGameState('game');
-    });
-
-    socketIo.on('changeSong', (s) => {
-      setCurrentSong(s);
+    socketIo.on('roomInGame', () => {
+      setGameState('waitround');
     });
   }, []);
 
@@ -124,6 +125,10 @@ const NonHost: any = ({ user }) => {
         return <Heading>Host disconnected...</Heading>;
       case 'notExist':
         return <Heading>Room does not exist</Heading>;
+      case 'waitround':
+        return (
+          <Heading>Please wait, you will get in on the next round.</Heading>
+        );
     }
   };
 
@@ -150,6 +155,7 @@ const NonHost: any = ({ user }) => {
                   return <SocialProfileWithImage user={user} />;
                 })}
             </Flex>
+            <Text>Waiting: {waitingRoom.length}</Text>
           </Box>
         )}
       </Flex>

@@ -57,9 +57,17 @@ export class GameGateway
         answer: '',
         id: user.id,
       };
+
       if (!spotifyIdToRoomId.has(user.id)) {
-        rooms.get(id).users[user.id] = newUser;
+        if (rooms.get(id).inGame) {
+          rooms.get(id).waitingRoom.push(newUser);
+          this.server.to(client.id).emit('updateRoom', rooms.get(id));
+          this.server.to(client.id).emit('roomInGame');
+        } else {
+          rooms.get(id).users[user.id] = newUser;
+        }
       }
+
       spotifyIdToRoomId.set(user.id, id);
       socketToSpotifyId.set(client.id, user.id);
       this.server.to(id).emit('updateRoom', rooms.get(id));
@@ -113,6 +121,7 @@ export class GameGateway
         users: {},
         tracks: [],
         allTrackTitles: [],
+        waitingRoom: [],
         inGame: false,
       });
       rooms.get(id).users[user.id] = newUser;
@@ -181,7 +190,7 @@ export class GameGateway
 
     this.logger.log(`Room ${id} has begun their game.`);
     this.server.to(id).emit('gameTimerStart');
-    let count = 5;
+    let count = 3;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
       if (count === 0) {
@@ -249,6 +258,11 @@ export class GameGateway
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
     const users = rooms.get(id).users;
+    rooms.get(id).waitingRoom.forEach((user) => {
+      users[user.id] = user;
+    });
+    rooms.get(id).waitingRoom = [];
+
     Object.entries(users).forEach((entry) => {
       const [key, val]: any = entry;
       rooms.get(id).users[key] = {
@@ -257,6 +271,7 @@ export class GameGateway
         voteSkip: false,
       };
     });
+
     rooms.get(id).inGame = false;
     this.logger.log(`Room ${id} has ended their game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));

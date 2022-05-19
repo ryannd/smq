@@ -49,6 +49,7 @@ const Host: any = ({ user }) => {
     onClose: onCloseTop,
   } = useDisclosure();
   const [rounds, setRounds] = useState(1);
+  const [waitingRoom, setWaitingRoom] = useState([]);
 
   useEffect(() => {
     const socketIo = io();
@@ -63,6 +64,9 @@ const Host: any = ({ user }) => {
       });
       setAllTracks((prev) => {
         return s.allTrackTitles;
+      });
+      setWaitingRoom((prev) => {
+        return s.waitingRoom;
       });
     });
 
@@ -231,15 +235,13 @@ const Host: any = ({ user }) => {
         return <Heading>{startTime}</Heading>;
       case 'game':
         return (
-          <>
-            <Game
-              currentSong={currentSong}
-              allTracks={allTracks}
-              socket={socket}
-              user={user}
-              id={randomRoom}
-            />
-          </>
+          <Game
+            currentSong={currentSong}
+            allTracks={allTracks}
+            socket={socket}
+            user={user}
+            id={randomRoom}
+          />
         );
       case 'end':
         return <Button onClick={() => startNewGame()}>Start new game.</Button>;
@@ -268,6 +270,7 @@ const Host: any = ({ user }) => {
                 return <SocialProfileWithImage user={user} />;
               })}
           </Flex>
+          <Text>Waiting: {waitingRoom.length}</Text>
         </Box>
       </Flex>
       <PlaylistModal
