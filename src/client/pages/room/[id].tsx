@@ -14,7 +14,7 @@ const NonHost: any = ({ user }) => {
   const [gameType, setGameType] = useState('');
   const [socket, setSocket] = useState(null);
   const [allTracks, setAllTracks] = useState([]);
-  const [startTime, setStartTime] = useState(10);
+  const [startTime, setStartTime] = useState(3);
   const [currentSong, setCurrentSong] = useState<any>();
   const [users, setUsers] = useState([]);
   const [gameState, setGameState] = useState('wait');
@@ -60,8 +60,10 @@ const NonHost: any = ({ user }) => {
     });
 
     socketIo.on('timerStartTick', (s) => {
-      setGameState('prep');
-      setStartTime(s);
+      if (gameState !== 'waitround') {
+        setGameState('prep');
+        setStartTime(s);
+      }
     });
 
     socketIo.on('changeSong', (s) => {

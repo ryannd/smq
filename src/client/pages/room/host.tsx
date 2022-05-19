@@ -36,7 +36,6 @@ const Host: any = ({ user }) => {
   const [randomRoom, setRandomRoom] = useState(
     (Math.random() + 1).toString(36).substring(7),
   );
-  const [hideSkip, setHideSkip] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState('');
   const {
     isOpen: isOpenPlaylist,
@@ -81,7 +80,6 @@ const Host: any = ({ user }) => {
 
     socketIo.on('newGame', (s) => {
       setStartTime(5);
-      setHideSkip(false);
       setRounds(1);
       setGameState('select');
     });
@@ -135,11 +133,9 @@ const Host: any = ({ user }) => {
     if (!randomRoom) return;
     if (!socket) return;
     socket.on('roundDone', () => {
-      setHideSkip(true);
       setTimeout(() => {
         if (rounds - 1 > 0) {
           socket.emit('newSong', { id: randomRoom });
-          setHideSkip(false);
         } else {
           socket.emit('endGame', { id: randomRoom });
         }
@@ -152,10 +148,6 @@ const Host: any = ({ user }) => {
   const startGame = async () => {
     setGameState('prep');
     socket.emit('startGame', { id: randomRoom });
-  };
-
-  const skipSong = () => {
-    socket.emit('hostSkip', { id: randomRoom });
   };
 
   const startNewGame = () => {
