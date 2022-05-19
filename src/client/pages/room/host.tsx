@@ -36,7 +36,6 @@ const Host: any = ({ user }) => {
   const [randomRoom, setRandomRoom] = useState(
     (Math.random() + 1).toString(36).substring(7),
   );
-  const [hideSkip, setHideSkip] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState('');
   const {
     isOpen: isOpenPlaylist,
@@ -49,6 +48,7 @@ const Host: any = ({ user }) => {
     onClose: onCloseTop,
   } = useDisclosure();
   const [rounds, setRounds] = useState(1);
+  const [waitingRoom, setWaitingRoom] = useState([]);
 
   useEffect(() => {
     const socketIo = io();
@@ -64,6 +64,9 @@ const Host: any = ({ user }) => {
       setAllTracks((prev) => {
         return s.allTrackTitles;
       });
+      setWaitingRoom((prev) => {
+        return s.waitingRoom;
+      });
     });
 
     socketIo.on('playlist', (s) => {
@@ -77,7 +80,6 @@ const Host: any = ({ user }) => {
 
     socketIo.on('newGame', (s) => {
       setStartTime(5);
-      setHideSkip(false);
       setRounds(1);
       setGameState('select');
     });
@@ -131,11 +133,9 @@ const Host: any = ({ user }) => {
     if (!randomRoom) return;
     if (!socket) return;
     socket.on('roundDone', () => {
-      setHideSkip(true);
       setTimeout(() => {
         if (rounds - 1 > 0) {
           socket.emit('newSong', { id: randomRoom });
-          setHideSkip(false);
         } else {
           socket.emit('endGame', { id: randomRoom });
         }
@@ -148,10 +148,6 @@ const Host: any = ({ user }) => {
   const startGame = async () => {
     setGameState('prep');
     socket.emit('startGame', { id: randomRoom });
-  };
-
-  const skipSong = () => {
-    socket.emit('hostSkip', { id: randomRoom });
   };
 
   const startNewGame = () => {
@@ -231,20 +227,13 @@ const Host: any = ({ user }) => {
         return <Heading>{startTime}</Heading>;
       case 'game':
         return (
-          <>
-            {!hideSkip && (
-              <Button onClick={() => skipSong()} mb="10px" colorScheme="red">
-                Skip
-              </Button>
-            )}
-            <Game
-              currentSong={currentSong}
-              allTracks={allTracks}
-              socket={socket}
-              user={user}
-              id={randomRoom}
-            />
-          </>
+          <Game
+            currentSong={currentSong}
+            allTracks={allTracks}
+            socket={socket}
+            user={user}
+            id={randomRoom}
+          />
         );
       case 'end':
         return <Button onClick={() => startNewGame()}>Start new game.</Button>;
@@ -273,6 +262,9 @@ const Host: any = ({ user }) => {
                 return <SocialProfileWithImage user={user} />;
               })}
           </Flex>
+          <Text>
+            Room: {randomRoom} | Waiting: {waitingRoom.length}
+          </Text>
         </Box>
       </Flex>
       <PlaylistModal
