@@ -189,16 +189,16 @@ export class GameGateway
   startTimer(@MessageBody('id') id: string) {
     const io = this.server;
     const room = rooms.get(id);
-    room.inGame = true;
     this.server.to(id).emit('updateRoom', room);
 
     this.logger.log(`Room ${id} has begun their game.`);
     this.server.to(id).emit('gameTimerStart');
-    let count = 3;
+    let count = 5;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
       if (count === 0) {
         clearInterval(countdown);
+        room.inGame = true;
         io.to(id).emit('startAll');
       }
       count--;

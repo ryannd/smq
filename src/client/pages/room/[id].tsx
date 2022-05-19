@@ -158,7 +158,7 @@ const NonHost: any = ({ user }) => {
                 })}
             </Flex>
             <Text>
-              Room: {id} Waiting: {waitingRoom.length}
+              Room: {randomRoom} | Waiting: {waitingRoom.length}
             </Text>
           </Box>
         )}

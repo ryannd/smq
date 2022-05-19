@@ -263,7 +263,7 @@ const Host: any = ({ user }) => {
               })}
           </Flex>
           <Text>
-            Room: {randomRoom} Waiting: {waitingRoom.length}
+            Room: {randomRoom} | Waiting: {waitingRoom.length}
           </Text>
         </Box>
       </Flex>
