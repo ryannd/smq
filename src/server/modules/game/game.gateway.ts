@@ -49,6 +49,11 @@ export class GameGateway
     } else {
       await client.join(id);
       this.logger.log(`Client joined room: ${id}`);
+
+      if (rooms.get(id).inGame) {
+        this.server.to(client.id).emit('roomInGame');
+      }
+
       const newUser: SocketUser = {
         user,
         score: 0,
@@ -62,7 +67,6 @@ export class GameGateway
         if (rooms.get(id).inGame) {
           rooms.get(id).waitingRoom.push(newUser);
           this.server.to(client.id).emit('updateRoom', rooms.get(id));
-          this.server.to(client.id).emit('roomInGame');
         } else {
           rooms.get(id).users[user.id] = newUser;
         }

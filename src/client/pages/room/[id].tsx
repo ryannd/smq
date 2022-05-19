@@ -157,7 +157,9 @@ const NonHost: any = ({ user }) => {
                   return <SocialProfileWithImage user={user} />;
                 })}
             </Flex>
-            <Text>Waiting: {waitingRoom.length}</Text>
+            <Text>
+              Room: {randomRoom} Waiting: {waitingRoom.length}
+            </Text>
           </Box>
         )}
       </Flex>
