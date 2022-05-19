@@ -17,6 +17,7 @@ import { io } from 'socket.io-client';
 import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
 import PlaylistModal from '~client/components/PlaylistModal';
+import TopTracksModal from '~client/components/TopTracksModal';
 
 const strings = {
   topTracks: 'Top Tracks',
@@ -25,7 +26,7 @@ const strings = {
 
 const Host: any = ({ user }) => {
   const [socket, setSocket] = useState(null);
-  const [gameType, setGameType] = useState('topTracks');
+  const [gameType, setGameType] = useState('');
   const [tracks, setTracks] = useState([]);
   const [allTracks, setAllTracks] = useState([]);
   const [startTime, setStartTime] = useState(5);
@@ -37,15 +38,23 @@ const Host: any = ({ user }) => {
   );
   const [hideSkip, setHideSkip] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState('');
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [rounds, setRounds] = useState(0);
+  const {
+    isOpen: isOpenPlaylist,
+    onOpen: onOpenPlaylist,
+    onClose: onClosePlaylist,
+  } = useDisclosure();
+  const {
+    isOpen: isOpenTop,
+    onOpen: onOpenTop,
+    onClose: onCloseTop,
+  } = useDisclosure();
+  const [rounds, setRounds] = useState(1);
 
   useEffect(() => {
     const socketIo = io();
 
     setSocket(socketIo);
     socketIo.on('updateRoom', (s) => {
-      console.log(s);
       setUsers((prev) => {
         return [...Object.values(s.users)];
       });
@@ -69,12 +78,20 @@ const Host: any = ({ user }) => {
     socketIo.on('newGame', (s) => {
       setStartTime(5);
       setHideSkip(false);
-      setRounds(0);
+      setRounds(1);
       setGameState('select');
     });
 
     socketIo.on('timerStartTick', (s) => {
       setStartTime(s);
+    });
+
+    socketIo.on('changeSong', (s) => {
+      setCurrentSong(s);
+    });
+
+    socketIo.on('topTracks', (s) => {
+      setGameType('topTracks');
     });
   }, []);
 
@@ -95,21 +112,19 @@ const Host: any = ({ user }) => {
         id: user.body.id,
       },
     });
+
+    return () => socket.off('hostJoinRoom');
   }, [randomRoom, user, socket]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.off('startAll');
-    socket.off('changeSong');
 
     socket.on('startAll', (s) => {
       setGameState('game');
       socket.emit('newSong', { id: randomRoom });
     });
 
-    socket.on('changeSong', (s) => {
-      setCurrentSong(s);
-    });
+    return () => socket.off('startAll');
   }, [randomRoom, socket]);
 
   useEffect(() => {
@@ -125,16 +140,10 @@ const Host: any = ({ user }) => {
           socket.emit('endGame', { id: randomRoom });
         }
       }, 5000);
-      console.log(rounds);
       setRounds((prev) => prev - 1);
     });
     return () => socket.off('roundDone');
   }, [randomRoom, socket, rounds]);
-
-  const selectTopTracks = () => {
-    socket.emit('hostTopTracks', { id: randomRoom });
-    setGameType('topTracks');
-  };
 
   const startGame = async () => {
     setGameState('prep');
@@ -161,43 +170,54 @@ const Host: any = ({ user }) => {
             </Box>
             <Box pb="50px">
               <Box pb="10px" mb="10px">
-                <Button onClick={() => selectTopTracks()} mr="10px">
+                <Button onClick={onOpenTop} mr="10px">
                   Top Tracks
                 </Button>
-                <Button onClick={onOpen}>Select a playlist</Button>
+                <Button onClick={onOpenPlaylist}>Select a playlist</Button>
               </Box>
-              <Flex justifyContent="center">
-                <NumberInput
-                  maxW="100px"
-                  mr="2rem"
-                  value={rounds}
-                  onChange={(value) => setRounds(parseInt(value))}
-                  max={tracks.length + 1}
-                >
-                  <NumberInputField />
-                </NumberInput>
-                <Slider
-                  flex="1"
-                  maxW="250px"
-                  focusThumbOnChange={false}
-                  value={rounds}
-                  onChange={(value) => setRounds(value)}
-                  max={tracks.length + 1}
-                >
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb fontSize="sm" boxSize="32px" children={rounds} />
-                </Slider>
-              </Flex>
-              {tracks.length > 0 && (
-                <Button
-                  colorScheme="green"
-                  mt="10px"
-                  onClick={() => startGame()}
-                >
-                  Start Game
-                </Button>
+              {tracks.length > 0 && allTracks.length === tracks.length && (
+                <>
+                  <Text fontSize="lg" mb="5px">
+                    Set number of rounds
+                  </Text>
+                  <Flex justifyContent="center">
+                    <NumberInput
+                      maxW="100px"
+                      mr="2rem"
+                      value={rounds}
+                      onChange={(value) => setRounds(parseInt(value))}
+                      min={1}
+                      max={tracks.length}
+                    >
+                      <NumberInputField />
+                    </NumberInput>
+                    <Slider
+                      flex="1"
+                      maxW="250px"
+                      focusThumbOnChange={false}
+                      value={rounds}
+                      onChange={(value) => setRounds(value)}
+                      min={1}
+                      max={tracks.length}
+                    >
+                      <SliderTrack>
+                        <SliderFilledTrack />
+                      </SliderTrack>
+                      <SliderThumb
+                        fontSize="sm"
+                        boxSize="32px"
+                        children={rounds}
+                      />
+                    </Slider>
+                  </Flex>
+                  <Button
+                    colorScheme="green"
+                    mt="10px"
+                    onClick={() => startGame()}
+                  >
+                    Start Game
+                  </Button>
+                </>
               )}
             </Box>
             <Box>
@@ -256,8 +276,15 @@ const Host: any = ({ user }) => {
         </Box>
       </Flex>
       <PlaylistModal
-        isOpen={isOpen}
-        onClose={onClose}
+        isOpen={isOpenPlaylist}
+        onClose={onClosePlaylist}
+        socket={socket}
+        room={randomRoom}
+      />
+      <TopTracksModal
+        isOpen={isOpenTop}
+        onClose={onCloseTop}
+        onOpen={onOpenTop}
         socket={socket}
         room={randomRoom}
       />

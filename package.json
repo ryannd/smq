@@ -21,7 +21,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@chakra-ui/react": "^1.8.8",
+    "@chakra-ui/react": "^2.0.2",
+    "@emotion/react": "^11",
     "@emotion/styled": "^11",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^2.0.0",
@@ -35,6 +36,7 @@
     "@nestjs/websockets": "^8.4.4",
     "axios": "^0.27.2",
     "chakra-react-select": "^3.3.3",
+    "chakra-ui-flashless": "^0.0.8",
     "cookie-cutter": "^0.2.0",
     "cookie-parser": "^1.4.6",
     "framer-motion": "^6",

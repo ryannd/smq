@@ -2,7 +2,9 @@ import { Badge, Box, Heading, Image } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import AudioPlayer, { RHAP_UI } from 'react-h5-audio-player';
 import { Select } from 'chakra-react-select';
+import TrackPlaceholderImg from '../public/images/blank_track.jpg';
 import 'react-h5-audio-player/lib/styles.css';
+import ChakraImageWrapper from './ChakraImageWrapper';
 
 const Game = ({ currentSong, allTracks, socket, user, id }) => {
   const [trackFill, setTrackFill] = useState<any>();
@@ -91,21 +93,20 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
               <Image
                 boxSize="300px"
                 borderTopRadius="10px"
-                w={['300px', '640px']}
+                w="640px"
                 objectFit="cover"
                 src={currentSong.images[0].url}
-                alt="Dan Abramov"
                 mt="20px"
+                fallbackSrc="/images/blank_track.jpg"
               />
             </>
           ) : (
-            <Image
-              boxSize="300px"
+            <ChakraImageWrapper
               borderTopRadius="10px"
-              w={['300px', '640px']}
+              width="640px"
+              height="300px"
               objectFit="cover"
-              src="https://images.pexels.com/photos/3391925/pexels-photo-3391925.jpeg?cs=srgb&dl=pexels-miguel-%C3%A1-padri%C3%B1%C3%A1n-3391925.jpg&fm=jpg&w=640&h=426"
-              alt="Blank album cover"
+              src={TrackPlaceholderImg}
             />
           )}
           <Box w={['100%', '640px']}>

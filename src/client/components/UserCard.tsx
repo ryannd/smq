@@ -35,13 +35,13 @@ export default function SocialProfileWithImage({ user }) {
           fontSize={'2xl'}
           fontFamily={'body'}
           mb={[0, 0, 2]}
-          isTruncated
+          noOfLines={1}
         >
           {user.user.name}
         </Heading>
         {user.answer !== '' && (
           <>
-            <Text isTruncated>{user.answer}</Text>
+            <Text noOfLines={1}>{user.answer}</Text>
             {user.isAnswerCorrect ? (
               <Badge ml="1" fontSize="0.8em" colorScheme="green">
                 <BsCheckLg />
