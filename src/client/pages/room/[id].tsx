@@ -53,7 +53,6 @@ const NonHost: any = ({ user }) => {
     socketIo.on('playlist', (s) => {
       setGameType('playlist');
       setPlaylistTitle(s);
-      console.log(s);
     });
 
     socketIo.on('timerStartTick', (s) => {

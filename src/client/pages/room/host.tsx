@@ -55,7 +55,6 @@ const Host: any = ({ user }) => {
 
     setSocket(socketIo);
     socketIo.on('updateRoom', (s) => {
-      console.log(s);
       setUsers((prev) => {
         return [...Object.values(s.users)];
       });
@@ -119,8 +118,6 @@ const Host: any = ({ user }) => {
 
   useEffect(() => {
     if (!socket) return;
-    socket.off('startAll');
-    socket.off('changeSong');
 
     socket.on('startAll', (s) => {
       setGameState('game');
@@ -143,7 +140,6 @@ const Host: any = ({ user }) => {
           socket.emit('endGame', { id: randomRoom });
         }
       }, 5000);
-      console.log(rounds);
       setRounds((prev) => prev - 1);
     });
     return () => socket.off('roundDone');
@@ -185,7 +181,8 @@ const Host: any = ({ user }) => {
                   mr="2rem"
                   value={rounds}
                   onChange={(value) => setRounds(parseInt(value))}
-                  max={tracks.length + 1}
+                  min={1}
+                  max={tracks.length}
                 >
                   <NumberInputField />
                 </NumberInput>
@@ -195,7 +192,8 @@ const Host: any = ({ user }) => {
                   focusThumbOnChange={false}
                   value={rounds}
                   onChange={(value) => setRounds(value)}
-                  max={tracks.length + 1}
+                  min={1}
+                  max={tracks.length}
                 >
                   <SliderTrack>
                     <SliderFilledTrack />

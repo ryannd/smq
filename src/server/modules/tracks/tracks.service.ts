@@ -63,7 +63,6 @@ export class TracksService {
 
   async getUserTopTracks(userId: string, timeRange: string, limit: number) {
     await this.userService.setSpotifyUserToken(userId);
-    console.log(timeRange + limit);
     const topTracks = await this.spotifyService.getMyTopTracks({
       time_range: timeRange,
       limit,

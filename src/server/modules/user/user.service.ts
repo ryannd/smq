@@ -20,7 +20,6 @@ export class UserService {
     });
 
     if (user) {
-      console.log('User found.');
       return this.userModel.findOneAndUpdate({ id }, createUserDto);
     }
 
@@ -38,10 +37,8 @@ export class UserService {
       const { accessToken, refreshToken, expiresAt } = user;
 
       if (reqTime < expiresAt) {
-        console.log('Token still valid.');
         this.spotifyClient.setAccessToken(accessToken);
       } else {
-        console.log('Tokens expired. Refreshing...');
         this.spotifyClient.setRefreshToken(refreshToken);
 
         const newAccessToken = await this.spotifyClient
