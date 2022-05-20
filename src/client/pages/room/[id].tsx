@@ -85,7 +85,9 @@ const NonHost: NextPage<Props> = ({ user }: Props) => {
     });
 
     socketIo.on('roomInGame', () => {
-      setGameState('waitround');
+      if (gameState !== 'game') {
+        setGameState('waitround');
+      }
     });
   }, []);
 
