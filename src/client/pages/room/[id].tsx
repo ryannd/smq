@@ -4,22 +4,30 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
+import { GameUser, Track, User } from '~client/globals/types';
+import { NextPage } from 'next';
 
 const strings = {
   topTracks: 'Top Tracks',
 };
 
-const NonHost: any = ({ user }) => {
+interface Props {
+  user: {
+    body: User;
+  };
+}
+
+const NonHost: NextPage<Props> = ({ user }: Props) => {
   const router = useRouter();
   const [gameType, setGameType] = useState('');
   const [socket, setSocket] = useState(null);
-  const [allTracks, setAllTracks] = useState([]);
-  const [startTime, setStartTime] = useState(3);
-  const [currentSong, setCurrentSong] = useState<any>();
-  const [users, setUsers] = useState([]);
+  const [allTracks, setAllTracks] = useState<string[]>([]);
+  const [startTime, setStartTime] = useState(5);
+  const [currentSong, setCurrentSong] = useState<Track>();
+  const [users, setUsers] = useState<GameUser[]>([]);
   const [gameState, setGameState] = useState('wait');
   const [playlistTitle, setPlaylistTitle] = useState('');
-  const [waitingRoom, setWaitingRoom] = useState([]);
+  const [waitingRoom, setWaitingRoom] = useState<GameUser[]>([]);
   const { id } = router.query;
 
   useEffect(() => {
@@ -27,18 +35,18 @@ const NonHost: any = ({ user }) => {
     setSocket(socketIo);
 
     socketIo.on('updateRoom', (s) => {
-      setUsers((prev) => {
-        return [...Object.values(s.users)];
+      setUsers(() => {
+        return Object.values(s.users);
       });
-      setAllTracks((prev) => {
+      setAllTracks(() => {
         return s.allTrackTitles;
       });
-      setWaitingRoom((prev) => {
+      setWaitingRoom(() => {
         return s.waitingRoom;
       });
     });
 
-    socketIo.on('newGame', (s) => {
+    socketIo.on('newGame', () => {
       setGameState('wait');
     });
     socketIo.on('hostDisconnect', () => {
@@ -47,10 +55,10 @@ const NonHost: any = ({ user }) => {
     socketIo.on('roomDoesNotExist', () => {
       setGameState('notExist');
     });
-    socketIo.on('endGame', (s) => {
+    socketIo.on('endGame', () => {
       setGameState('end');
     });
-    socketIo.on('topTracks', (s) => {
+    socketIo.on('topTracks', () => {
       setGameType('topTracks');
     });
 
@@ -70,7 +78,7 @@ const NonHost: any = ({ user }) => {
       setCurrentSong(s);
     });
 
-    socketIo.on('startAll', (s) => {
+    socketIo.on('startAll', () => {
       if (gameState !== 'waitround') {
         setGameState('game');
       }

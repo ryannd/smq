@@ -10,8 +10,8 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
-import { SocketRoom } from './types/SocketRoom';
-import { SocketUser } from './types/SocketUser';
+import { ClientUser, SocketRoom } from '../../globals/types';
+import { SocketUser } from '../../globals/types';
 import { TracksService } from '../tracks/tracks.service';
 
 // hold room data
@@ -40,7 +40,7 @@ export class GameGateway
   @SubscribeMessage('joinRoom')
   async joinRoom(
     @MessageBody('id') id: string,
-    @MessageBody('user') user: any,
+    @MessageBody('user') user: ClientUser,
     @ConnectedSocket()
     client: Socket,
   ) {
@@ -63,29 +63,36 @@ export class GameGateway
         id: user.id,
       };
 
+      // only add if user not in a different room already
       if (!spotifyIdToRoomId.has(user.id)) {
         if (rooms.get(id).inGame) {
+          // put user in waiting room
           rooms.get(id).waitingRoom.push(newUser);
           this.server.to(client.id).emit('updateRoom', rooms.get(id));
         } else {
           rooms.get(id).users[user.id] = newUser;
         }
+
+        spotifyIdToRoomId.set(user.id, id);
+        socketToSpotifyId.set(client.id, user.id);
+        this.server.to(id).emit('updateRoom', rooms.get(id));
       }
 
-      spotifyIdToRoomId.set(user.id, id);
-      socketToSpotifyId.set(client.id, user.id);
-      this.server.to(id).emit('updateRoom', rooms.get(id));
+      // user in limbo i guess shouldn'tve joined 2 rooms at once bozo
     }
   }
 
   @SubscribeMessage('skipSong')
   skipSong(@MessageBody('id') id: string, @ConnectedSocket() client: Socket) {
+    // get user id and set vote skip to true
     const spotify = socketToSpotifyId.get(client.id);
     const users = rooms.get(id).users;
     users[spotify].voteSkip = true;
 
+    // send vote to room
     this.server.to(id).emit('updateRoom', rooms.get(id));
 
+    // if everyone in room vote skips, skip the song
     const numUsers = Object.entries(users).length;
     let count = 0;
     for (let i = 0; i < numUsers; i++) {
@@ -105,12 +112,13 @@ export class GameGateway
   @SubscribeMessage('hostJoinRoom')
   async createRoom(
     @MessageBody('id') id: string,
-    @MessageBody('user') user: any,
+    @MessageBody('user') user: ClientUser,
     @ConnectedSocket()
     client: Socket,
   ) {
     await client.join(id);
     this.logger.log(`Host created room: ${id}`);
+
     const newUser: SocketUser = {
       user,
       score: 0,
@@ -119,6 +127,8 @@ export class GameGateway
       answer: '',
       id: user.id,
     };
+
+    // only create room if host not in another room already
     if (!spotifyIdToRoomId.has(user.id)) {
       rooms.set(id, {
         host: user.id,
@@ -143,6 +153,7 @@ export class GameGateway
     @MessageBody('timeRange') timeRange: string,
     @MessageBody('limit') limit: number,
   ) {
+    // get top tracks of all users in the room based on criteria
     const room = rooms.get(id);
     const tracks = await Promise.all(
       Object.keys(room.users).map(async (userId) => {
@@ -153,11 +164,14 @@ export class GameGateway
         );
       }),
     );
+    // array of arrays separated by each user, use flat to combine all arrays
     room.tracks = tracks.flat();
+    // remove duplicates
     room.tracks = room.tracks.filter(
       (value, index, self) =>
         index === self.findIndex((t) => t.id === value.id),
     );
+    // save track titles for autofill (bc new song takes it out of tracks array so it doesnt get picked twice)
     room.allTrackTitles = room.tracks.map((v) => v.name);
     this.logger.log(
       `Room ${id} selected Top Tracks with time range: ${timeRange} and limit: ${limit}`,
@@ -173,13 +187,16 @@ export class GameGateway
     @ConnectedSocket()
     client: Socket,
   ) {
+    // get playlist tracks and update room with new tracks
     const playlist = await this.tracksClient.getPlaylistFromId(
       playlistId,
       socketToSpotifyId.get(client.id),
     );
+    // send the title before tracks so it looks faster than it is :3
     this.server.to(id).emit('playlist', playlist.title);
     const room = rooms.get(id);
     room.tracks = playlist.tracks;
+    // save track titles for autofill (bc new song takes it out of tracks array so it doesnt get picked twice)
     room.allTrackTitles = room.tracks.map((v) => v.name);
     this.logger.log(`Room ${id} selected playlist: ${playlist.title}`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
@@ -189,9 +206,10 @@ export class GameGateway
   startTimer(@MessageBody('id') id: string) {
     const io = this.server;
     const room = rooms.get(id);
+    // send tracks again in case someone joined late
     this.server.to(id).emit('updateRoom', room);
-
     this.logger.log(`Room ${id} has begun their game.`);
+    // prep timer might remove or shorten later tbh
     this.server.to(id).emit('gameTimerStart');
     let count = 5;
     const countdown = setInterval(function () {
@@ -208,17 +226,19 @@ export class GameGateway
   @SubscribeMessage('newSong')
   changeSong(@MessageBody('id') id: string) {
     const io = this.server;
-    let count = 19;
 
     const tracks = rooms.get(id).tracks;
     const users = rooms.get(id).users;
+    // get random index of tracks array
     const index = Math.floor(Math.random() * tracks.length);
     const nextSong = tracks[index];
+    // remove from array to prevent doubles
     rooms.get(id).tracks.splice(index, 1);
 
     this.server.to(id).emit('changeSong', nextSong);
     this.server.to(id).emit('newRound');
 
+    // reset user answers and vote skip for new round
     Object.entries(users).forEach((entry) => {
       const [key, val]: any = entry;
       rooms.get(id).users[key] = {
@@ -228,8 +248,11 @@ export class GameGateway
         voteSkip: false,
       };
     });
+
     this.server.to(id).emit('updateRoom', rooms.get(id));
 
+    // 20 sec round timer (19 bc of delay at start)
+    let count = 19;
     io.to(id).emit('roundStartTick', 20);
     roundCountdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
@@ -244,12 +267,12 @@ export class GameGateway
 
   @SubscribeMessage('roundAnswer')
   savePoints(
-    @MessageBody('user') user,
+    @MessageBody('user') user: ClientUser,
     @MessageBody('id') id: string,
     @MessageBody('isAnswerCorrect') isAnswerCorrect,
     @MessageBody('answer') answer,
-    @ConnectedSocket() client: Socket,
   ) {
+    // update user score and room to show all user answers
     const foundUser = rooms.get(id).users[user.id];
     const newScore = foundUser.score + (isAnswerCorrect ? 10 : 0);
     foundUser.score = newScore;
@@ -262,11 +285,14 @@ export class GameGateway
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
     const users = rooms.get(id).users;
+
+    // move users from waiting room to game
     rooms.get(id).waitingRoom.forEach((user) => {
       users[user.id] = user;
     });
     rooms.get(id).waitingRoom = [];
 
+    // prevent keeping final answer shown at end screen
     Object.entries(users).forEach((entry) => {
       const [key, val]: any = entry;
       rooms.get(id).users[key] = {
@@ -285,6 +311,10 @@ export class GameGateway
   @SubscribeMessage('newGame')
   newGame(@MessageBody('id') id: string) {
     const users = rooms.get(id).users;
+
+    // TODO: after implementing exp and user enhancements, can put exp logic here probably
+
+    // reset user score at end of game
     Object.entries(users).forEach((entry) => {
       const [key, val]: any = entry;
       rooms.get(id).users[key] = {
@@ -292,6 +322,7 @@ export class GameGateway
         score: 0,
       };
     });
+
     this.logger.log(`Room ${id} chose to start a new game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
     this.server.to(id).emit('newGame');
@@ -304,7 +335,8 @@ export class GameGateway
 
   handleDisconnect(client: Socket) {
     const spotify = socketToSpotifyId.get(client.id);
-    let room;
+    let room: string;
+    // if disconnected user is a host, delete room. if not, remove user from room
     if (hostToRoomId.has(spotify)) {
       room = hostToRoomId.get(spotify);
       const users = rooms.get(room).users;

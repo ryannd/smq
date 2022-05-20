@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { NextPage } from 'next';
 import useSWR from 'swr';
-import { User } from '../types/user.type';
+import { User } from '../globals/types';
 import fetcher from '../utils/fetcher';
 interface IsLoggedInProps {
   user: User;

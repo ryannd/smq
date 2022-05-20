@@ -22,12 +22,12 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('newRound', (s) => {
+    socket.on('newRound', () => {
       setShowTitle(false);
       setAnswer('');
       setAnswerSave('');
       setShowSkip(true);
-      setIsAnswerCorrect((p) => false);
+      setIsAnswerCorrect(() => false);
       setGameTime(20);
     });
 
@@ -148,7 +148,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
                 if (!showTitle) {
                   setAnswer(value);
                   setAnswerSave(label);
-                  setIsAnswerCorrect((p) => label === currentSong.name);
+                  setIsAnswerCorrect(() => label === currentSong.name);
                 } else {
                   setAnswer('');
                   setAnswerSave('');

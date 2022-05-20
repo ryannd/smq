@@ -9,8 +9,13 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { BsCheckLg, BsXLg } from 'react-icons/bs';
+import { GameUser } from '~client/globals/types';
 
-export default function SocialProfileWithImage({ user }) {
+interface Props {
+  user: GameUser;
+}
+
+export default function SocialProfileWithImage({ user }: Props) {
   if (!user) return;
   return (
     <Center py={[0, 0, 6]} w={['250px', '200px']}>

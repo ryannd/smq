@@ -1,6 +1,6 @@
 import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
 import Link from 'next/link';
-import { User } from '../types/user.type';
+import { User } from '../globals/types';
 
 interface Props {
   user: {
