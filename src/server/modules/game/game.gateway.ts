@@ -348,9 +348,11 @@ export class GameGateway
       }
     } else {
       room = spotifyIdToRoomId.get(spotify);
-      delete rooms.get(room).users[spotify];
-      this.server.to(room).emit('updateRoom', rooms.get(room));
-      spotifyIdToRoomId.delete(spotify);
+      if (rooms.get(room) !== undefined) {
+        delete rooms.get(room).users[spotify];
+        this.server.to(room).emit('updateRoom', rooms.get(room));
+        spotifyIdToRoomId.delete(spotify);
+      }
     }
 
     this.logger.log(`Client ${client.id} disconnected from room ${room}`);
