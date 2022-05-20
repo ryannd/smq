@@ -16,6 +16,7 @@ import { useState } from 'react';
 const PlaylistModal = ({ isOpen, onClose, socket, room }) => {
   const [url, setUrl] = useState('');
   const [valid, setValid] = useState(true);
+
   const handleSubmit = async () => {
     const urlObj = new URL(url);
     const id = urlObj.pathname.split('/');

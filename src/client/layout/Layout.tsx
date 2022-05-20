@@ -11,8 +11,10 @@ interface Props {
 }
 
 const Layout: React.FC<Props> = ({ children }: Props) => {
+  // fetch user obj
   const { data: user, error } = useSWR('/api/user/me', fetcher);
 
+  // have user obj on every page
   const childrenWithUser = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
       return React.cloneElement(child, { user });

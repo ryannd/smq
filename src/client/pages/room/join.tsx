@@ -1,10 +1,9 @@
 import { Box, Button, Input } from '@chakra-ui/react';
-import { useRouter } from 'next/router';
+import { NextPage } from 'next';
 import { useState } from 'react';
 
-const Join = () => {
+const Join: NextPage = () => {
   const [code, setCode] = useState('');
-  const router = useRouter();
 
   const handleChange = (event) => setCode(event.target.value);
 

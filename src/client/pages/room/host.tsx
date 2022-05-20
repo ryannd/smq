@@ -18,6 +18,7 @@ import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
 import PlaylistModal from '~client/components/PlaylistModal';
 import TopTracksModal from '~client/components/TopTracksModal';
+import { GameUser, Track } from '~client/globals/types';
 
 const strings = {
   topTracks: 'Top Tracks',
@@ -27,16 +28,17 @@ const strings = {
 const Host: any = ({ user }) => {
   const [socket, setSocket] = useState(null);
   const [gameType, setGameType] = useState('');
-  const [tracks, setTracks] = useState([]);
-  const [allTracks, setAllTracks] = useState([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [allTracks, setAllTracks] = useState<string[]>([]);
   const [startTime, setStartTime] = useState(5);
   const [gameState, setGameState] = useState('select');
-  const [currentSong, setCurrentSong] = useState<any>();
-  const [users, setUsers] = useState([]);
-  const [randomRoom, setRandomRoom] = useState(
-    (Math.random() + 1).toString(36).substring(7),
-  );
+  const [currentSong, setCurrentSong] = useState<Track>();
+  const [users, setUsers] = useState<GameUser[]>([]);
+  const [rounds, setRounds] = useState(1);
+  const [waitingRoom, setWaitingRoom] = useState<GameUser[]>([]);
   const [playlistTitle, setPlaylistTitle] = useState('');
+  const [randomRoom] = useState((Math.random() + 1).toString(36).substring(7));
+
   const {
     isOpen: isOpenPlaylist,
     onOpen: onOpenPlaylist,
@@ -47,24 +49,22 @@ const Host: any = ({ user }) => {
     onOpen: onOpenTop,
     onClose: onCloseTop,
   } = useDisclosure();
-  const [rounds, setRounds] = useState(1);
-  const [waitingRoom, setWaitingRoom] = useState([]);
 
   useEffect(() => {
     const socketIo = io();
 
     setSocket(socketIo);
     socketIo.on('updateRoom', (s) => {
-      setUsers((prev) => {
-        return [...Object.values(s.users)];
+      setUsers(() => {
+        return Object.values(s.users);
       });
-      setTracks((prev) => {
+      setTracks(() => {
         return [...s.tracks];
       });
-      setAllTracks((prev) => {
+      setAllTracks(() => {
         return s.allTrackTitles;
       });
-      setWaitingRoom((prev) => {
+      setWaitingRoom(() => {
         return s.waitingRoom;
       });
     });
@@ -74,11 +74,11 @@ const Host: any = ({ user }) => {
       setPlaylistTitle(s);
     });
 
-    socketIo.on('endGame', (s) => {
+    socketIo.on('endGame', () => {
       setGameState('end');
     });
 
-    socketIo.on('newGame', (s) => {
+    socketIo.on('newGame', () => {
       setStartTime(5);
       setRounds(1);
       setGameState('select');
@@ -92,7 +92,7 @@ const Host: any = ({ user }) => {
       setCurrentSong(s);
     });
 
-    socketIo.on('topTracks', (s) => {
+    socketIo.on('topTracks', () => {
       setGameType('topTracks');
     });
   }, []);
@@ -121,7 +121,7 @@ const Host: any = ({ user }) => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('startAll', (s) => {
+    socket.on('startAll', () => {
       setGameState('game');
       socket.emit('newSong', { id: randomRoom });
     });
@@ -276,7 +276,6 @@ const Host: any = ({ user }) => {
       <TopTracksModal
         isOpen={isOpenTop}
         onClose={onCloseTop}
-        onOpen={onOpenTop}
         socket={socket}
         room={randomRoom}
       />

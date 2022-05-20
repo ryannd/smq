@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 
-const TopTracksModal = ({ onOpen, isOpen, onClose, socket, room }) => {
+const TopTracksModal = ({ isOpen, onClose, socket, room }) => {
   if (!socket || !room) return;
   const [numPerUser, setNumPerUser] = useState(0);
   const [timeRange, setTimeRange] = useState('long_term');

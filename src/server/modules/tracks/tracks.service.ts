@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Playlist, Track } from '~server/globals/types';
 import { SpotifyService } from '../spotify/spotify.service';
 import { UserService } from '../user/user.service';
 
@@ -9,7 +10,7 @@ export class TracksService {
     private readonly userService: UserService,
   ) {}
 
-  async getUserTopTracksAll(userId: string) {
+  async getUserTopTracksAll(userId: string): Promise<Track[]> {
     await this.userService.setSpotifyUserToken(userId);
     const topTracks = (await this.spotifyService.getMyTopTracks()).body;
     if (topTracks.total > topTracks.limit) {
@@ -23,7 +24,7 @@ export class TracksService {
         trackToAdd.items.forEach((item) => topTracks.items.push(item));
       }
     }
-    const tracks = topTracks.items
+    const tracks: Track[] = topTracks.items
       .filter((track) => track.preview_url !== null)
       .map((track) => {
         const {
@@ -61,13 +62,17 @@ export class TracksService {
     return tracks;
   }
 
-  async getUserTopTracks(userId: string, timeRange: string, limit: number) {
+  async getUserTopTracks(
+    userId: string,
+    timeRange: string,
+    limit: number,
+  ): Promise<Track[]> {
     await this.userService.setSpotifyUserToken(userId);
     const topTracks = await this.spotifyService.getMyTopTracks({
       time_range: timeRange,
       limit,
     });
-    const tracks = topTracks.body.items
+    const tracks: Track[] = topTracks.body.items
       .filter((track) => track.preview_url !== null)
       .map((track) => {
         const {
@@ -105,7 +110,10 @@ export class TracksService {
     return tracks;
   }
 
-  async getPlaylistFromId(playlistId: string, userId: string) {
+  async getPlaylistFromId(
+    playlistId: string,
+    userId: string,
+  ): Promise<Playlist> {
     await this.userService.setSpotifyUserToken(userId);
     const playlist = (
       await this.spotifyService.getPlaylist(playlistId, { market: 'US' })
@@ -127,7 +135,7 @@ export class TracksService {
         trackToAdd.items.forEach((item) => playlist.tracks.items.push(item));
       }
     }
-    const tracks = playlist.tracks.items
+    const tracks: Track[] = playlist.tracks.items
       .filter((track) => track.track.preview_url !== null)
       .map((obj) => {
         const {

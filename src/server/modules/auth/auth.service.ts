@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Profile } from 'passport-spotify';
-import { AuthInfo, ProfileJson } from '../../types/passport-spotify';
+import { AuthInfo, ProfileJson } from '../../globals/types';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { User } from '../user/schema/user.schema';
 import { UserService } from '../user/user.service';
