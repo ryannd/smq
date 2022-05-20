@@ -67,27 +67,8 @@ const NonHost: NextPage<Props> = ({ user }: Props) => {
       setPlaylistTitle(s);
     });
 
-    socketIo.on('timerStartTick', (s) => {
-      if (gameState !== 'waitround') {
-        setGameState('prep');
-        setStartTime(s);
-      }
-    });
-
     socketIo.on('changeSong', (s) => {
       setCurrentSong(s);
-    });
-
-    socketIo.on('startAll', () => {
-      if (gameState !== 'waitround') {
-        setGameState('game');
-      }
-    });
-
-    socketIo.on('roomInGame', () => {
-      if (gameState !== 'game') {
-        setGameState('waitround');
-      }
     });
   }, []);
 
@@ -108,6 +89,34 @@ const NonHost: NextPage<Props> = ({ user }: Props) => {
 
     return () => socket.off('joinRoom');
   }, [id, user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('timerStartTick', (s) => {
+      if (gameState !== 'waitround') {
+        setGameState('prep');
+        setStartTime(s);
+      }
+    });
+
+    socket.on('startAll', () => {
+      if (gameState !== 'waitround') {
+        setGameState('game');
+      }
+    });
+
+    socket.on('roomInGame', () => {
+      if (gameState !== 'game') {
+        setGameState('waitround');
+      }
+    });
+
+    return () => {
+      socket.off('timerStartTick');
+      socket.off('startAll');
+      socket.off('roomInGame');
+    };
+  }, [gameState, socket]);
 
   const content = () => {
     switch (gameState) {
