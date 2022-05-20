@@ -256,10 +256,13 @@ export class GameGateway
     io.to(id).emit('roundStartTick', 20);
     roundCountdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
-      if (count === 0) {
+      if (count == 0) {
         clearInterval(roundCountdown);
         io.to(id).emit('roundDone');
         io.to(id).emit('showTitle');
+      }
+      if (count < 0) {
+        clearInterval(roundCountdown);
       }
       count--;
     }, 1000);
