@@ -25,6 +25,7 @@ export class TracksService {
       }
     }
     const tracks: Track[] = topTracks.items
+      .filter((track) => track !== null)
       .filter((track) => track.preview_url !== null)
       .map((track) => {
         const {
