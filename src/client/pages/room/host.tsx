@@ -37,7 +37,7 @@ const Host: any = ({ user }) => {
   const [rounds, setRounds] = useState(1);
   const [waitingRoom, setWaitingRoom] = useState<GameUser[]>([]);
   const [playlistTitle, setPlaylistTitle] = useState('');
-  const randomRoom = (Math.random() + 1).toString(36).substring(7);
+  const [randomRoom] = useState((Math.random() + 1).toString(36).substring(7));
 
   const {
     isOpen: isOpenPlaylist,
