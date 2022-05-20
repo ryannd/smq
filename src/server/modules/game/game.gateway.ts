@@ -286,12 +286,6 @@ export class GameGateway
     this.server.to(id).emit('endGame');
     const users = rooms.get(id).users;
 
-    // move users from waiting room to game
-    rooms.get(id).waitingRoom.forEach((user) => {
-      users[user.id] = user;
-    });
-    rooms.get(id).waitingRoom = [];
-
     // prevent keeping final answer shown at end screen
     Object.entries(users).forEach((entry) => {
       const [key, val]: any = entry;
@@ -313,6 +307,12 @@ export class GameGateway
     const users = rooms.get(id).users;
 
     // TODO: after implementing exp and user enhancements, can put exp logic here probably
+
+    // move users from waiting room to game
+    rooms.get(id).waitingRoom.forEach((user) => {
+      users[user.id] = user;
+    });
+    rooms.get(id).waitingRoom = [];
 
     // reset user score at end of game
     Object.entries(users).forEach((entry) => {
