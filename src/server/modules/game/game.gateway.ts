@@ -339,11 +339,13 @@ export class GameGateway
     // if disconnected user is a host, delete room. if not, remove user from room
     if (hostToRoomId.has(spotify)) {
       room = hostToRoomId.get(spotify);
-      const users = rooms.get(room).users;
-      Object.keys(users).forEach((user) => spotifyIdToRoomId.delete(user));
-      this.server.to(room).emit('hostDisconnect');
-      hostToRoomId.delete(spotify);
-      rooms.delete(room);
+      if (rooms.get(room) !== undefined) {
+        const users = rooms.get(room).users;
+        Object.keys(users).forEach((user) => spotifyIdToRoomId.delete(user));
+        this.server.to(room).emit('hostDisconnect');
+        hostToRoomId.delete(spotify);
+        rooms.delete(room);
+      }
     } else {
       room = spotifyIdToRoomId.get(spotify);
       delete rooms.get(room).users[spotify];
