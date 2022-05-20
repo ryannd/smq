@@ -25,7 +25,6 @@ export class TracksService {
       }
     }
     const tracks: Track[] = topTracks.items
-      .filter((track) => track !== null)
       .filter((track) => track.preview_url !== null)
       .map((track) => {
         const {
@@ -137,6 +136,7 @@ export class TracksService {
       }
     }
     const tracks: Track[] = playlist.tracks.items
+      .filter((track) => track.track !== null)
       .filter((track) => track.track.preview_url !== null)
       .map((obj) => {
         const {
