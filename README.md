@@ -18,7 +18,7 @@
 
   <p align="center">
     A real-time multiplayer quiz game to test your music knowledge.
-    <br />
+    <br />    
     <br />
     <a href="https://smq-p.herokuapp.com/">Play here</a>
     ·
@@ -35,6 +35,10 @@
 <img src="https://i.imgur.com/038ApIE.png" width="960" height="450"/>
 
 Inspired by [Anime Music Quiz](https://animemusicquiz.com/).
+
+To play, DM "ryan d#6648" on Discord to get whitelisted for Spotify API access. 
+
+Will have to do this until I submit quota extension request, sorry for inconvenience
 
 ### Built With
 
