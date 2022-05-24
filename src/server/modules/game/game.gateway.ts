@@ -118,7 +118,7 @@ export class GameGateway
   ) {
     await client.join(id);
     this.logger.log(`Host created room: ${id}`);
-    console.log(user);
+
     const newUser: SocketUser = {
       user,
       score: 0,
@@ -165,18 +165,17 @@ export class GameGateway
         );
       }),
     );
- 
-    if (tracks.flat().length > 1) {
-      // array of arrays separated by each user, use flat to combine all arrays
-      room.tracks = tracks.flat();
-      // remove duplicates
-      room.tracks = room.tracks.filter(
+
+    // remove duplicates
+    room.tracks = tracks
+      .flat()
+      .filter((v) => v !== undefined)
+      .filter(
         (value, index, self) =>
           index === self.findIndex((t) => t.id === value.id),
       );
-      // save track titles for autofill (bc new song takes it out of tracks array so it doesnt get picked twice)
-      room.allTrackTitles = room.tracks.map((v) => v.name);
-    }
+    // save track titles for autofill (bc new song takes it out of tracks array so it doesnt get picked twice)
+    room.allTrackTitles = room.tracks.map((v) => v.name);
 
     this.logger.log(
       `Room ${id} selected Top Tracks with time range: ${timeRange} and limit: ${limit}`,
