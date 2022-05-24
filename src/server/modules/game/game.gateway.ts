@@ -165,8 +165,8 @@ export class GameGateway
         );
       }),
     );
-
-    if (tracks.flat().length !== 1) {
+ 
+    if (tracks.flat().length > 1) {
       // array of arrays separated by each user, use flat to combine all arrays
       room.tracks = tracks.flat();
       // remove duplicates

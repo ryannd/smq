@@ -38,12 +38,7 @@ const Game = ({ currentSong, allTracks, socket, user, id }) => {
       setShowTitle(true);
       setOpenMenu(false);
       socket.emit('roundAnswer', {
-        user: {
-          name: user.body.display_name,
-          pic: user.body.images[0] || null,
-          url: user.body.external_urls.spotify,
-          id: user.body.id,
-        },
+        user,
         isAnswerCorrect,
         answer: answerSave,
         id,
