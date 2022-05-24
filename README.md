@@ -36,9 +36,7 @@
 
 Inspired by [Anime Music Quiz](https://animemusicquiz.com/).
 
-To play, DM "ryan d#6648" on Discord to get whitelisted for Spotify API access. 
-
-Will have to do this until I submit quota extension request, sorry for inconvenience
+To play, DM "ryan d#6648" on Discord to get whitelisted for Spotify API access or **NEW** play as a guest. (no top track feature for guest users)
 
 ### Built With
 
