@@ -2,40 +2,81 @@ import {
   Button,
   Center,
   Flex,
+  FormControl,
   Heading,
+  Input,
   Link,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Stack,
   Text,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { NextPage } from 'next';
-import useSWR from 'swr';
-import { User } from '../globals/types';
-import fetcher from '../utils/fetcher';
+import { useState } from 'react';
+import { ClientUser } from '../globals/types';
 interface IsLoggedInProps {
-  user: User;
+  user: ClientUser;
 }
-const Home: NextPage = () => {
-  const { data } = useSWR('/api/user/me', fetcher);
-
+const Home: NextPage<IsLoggedInProps> = ({ user }) => {
   return (
     <>
       <Center w="100%" h="100%">
-        {data ? <IsLoggedIn user={data.body} /> : <NotLoggedIn />}
+        {user ? <IsLoggedIn user={user} /> : <NotLoggedIn />}
       </Center>
     </>
   );
 };
 
 export const NotLoggedIn: React.FC = () => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [name, setName] = useState('');
+
+  const saveName = () => {
+    const randId = Math.random().toString(36).substring(2, 7);
+    localStorage.setItem('guestId', randId);
+    localStorage.setItem('guestName', name);
+    location.reload();
+    onClose();
+  };
   return (
     <>
       <Stack align="center">
         <Heading>wewcome to spotify.music.quiz :3</Heading>
         <Text>pwease wogin bewow</Text>
-        <a href="/api/auth/login">
-          <Button>wogin with spowify</Button>
-        </a>
+        <Flex>
+          <a href="/api/auth/login">
+            <Button mr="30px">wogin with spowify</Button>
+          </a>
+          <Button onClick={onOpen}>wogin aw gwest</Button>
+        </Flex>
       </Stack>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Login as Guest</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl>
+              <Input
+                onChange={(event) => setName(event.target.value)}
+                placeholder="User name"
+              />
+            </FormControl>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={saveName}>
+              Login
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 };
@@ -45,7 +86,7 @@ const IsLoggedIn: React.FC<IsLoggedInProps> = ({ user }: IsLoggedInProps) => {
     <>
       <Stack align="center">
         <Heading mb="20px">
-          hewwo {user.display_name.toLowerCase()}! sewect an option bewow.
+          hewwo {user.name.toLowerCase()}! sewect an option bewow.
         </Heading>
         <Flex>
           <Link href={`/room/host`}>

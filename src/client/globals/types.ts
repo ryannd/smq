@@ -21,13 +21,23 @@ export type User = {
   uri: string;
 };
 
+export type ClientUser = {
+  name: string;
+  pic?: {
+    url: string;
+    height: number;
+    width: number;
+  };
+  url: string;
+  id: string;
+};
 export type GameRoom = {
   host: string;
   users: {
     [key: string]: GameUser;
   };
   waitingRoom: GameUser[];
-  tracks: any[];
+  tracks: Track[];
   allTrackTitles: string[];
   inGame: boolean;
 };

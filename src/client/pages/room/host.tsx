@@ -18,14 +18,19 @@ import Game from '../../components/Game';
 import SocialProfileWithImage from '~client/components/UserCard';
 import PlaylistModal from '~client/components/PlaylistModal';
 import TopTracksModal from '~client/components/TopTracksModal';
-import { GameUser, Track } from '~client/globals/types';
+import { ClientUser, GameUser, Track } from '~client/globals/types';
+import { NextPage } from 'next';
 
 const strings = {
   topTracks: 'Top Tracks',
   playlist: 'Playlist',
 };
 
-const Host: any = ({ user }) => {
+interface Props {
+  user: ClientUser;
+}
+
+const Host: NextPage<Props> = ({ user }) => {
   const [socket, setSocket] = useState(null);
   const [gameType, setGameType] = useState('');
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -107,12 +112,7 @@ const Host: any = ({ user }) => {
 
     socket.emit('hostJoinRoom', {
       id: randomRoom,
-      user: {
-        name: user.body.display_name,
-        pic: user.body.images[0] || undefined,
-        url: user.body.external_urls.spotify,
-        id: user.body.id,
-      },
+      user,
     });
 
     return () => socket.off('hostJoinRoom');
