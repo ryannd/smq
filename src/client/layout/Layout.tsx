@@ -1,8 +1,9 @@
 import { Center, Flex } from '@chakra-ui/react';
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { NotLoggedIn } from '~client/pages';
 import fetcher from '../utils/fetcher';
+import { ClientUser } from '../globals/types';
 
 import Header from './Header';
 
@@ -12,8 +13,9 @@ interface Props {
 
 const Layout: React.FC<Props> = ({ children }: Props) => {
   // fetch user obj
-  const { data: user, error } = useSWR('/api/user/me', fetcher);
-
+  const { data, error } = useSWR('/api/user/me', fetcher);
+  const [user, setUser] = useState<ClientUser>();
+  const [noUser, setNoUser] = useState(true);
   // have user obj on every page
   const childrenWithUser = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
@@ -21,6 +23,25 @@ const Layout: React.FC<Props> = ({ children }: Props) => {
     }
     return child;
   });
+
+  useEffect(() => {
+    if (!data) {
+      const name = localStorage.getItem('guestName');
+      const id = localStorage.getItem('guestId');
+      if (name) {
+        setUser({ id, name, url: '' });
+        setNoUser(false);
+      }
+    } else {
+      setUser({
+        name: data.body.display_name,
+        pic: data.body.images[0] || undefined,
+        url: data.body.external_urls.spotify,
+        id: data.body.id,
+      });
+      setNoUser(false);
+    }
+  }, [data]);
 
   return (
     <Flex
@@ -34,7 +55,7 @@ const Layout: React.FC<Props> = ({ children }: Props) => {
     >
       <Header user={user} />
       <Center justifySelf="center" w="100%" h="100%">
-        {error ? <NotLoggedIn /> : childrenWithUser}
+        {noUser ? <NotLoggedIn /> : childrenWithUser}
       </Center>
     </Flex>
   );

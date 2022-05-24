@@ -79,12 +79,7 @@ const NonHost: NextPage<Props> = ({ user }: Props) => {
 
     socket.emit('joinRoom', {
       id,
-      user: {
-        name: user.body.display_name,
-        pic: user.body.images[0] || undefined,
-        url: user.body.external_urls.spotify,
-        id: user.body.id,
-      },
+      user,
     });
 
     return () => socket.off('joinRoom');
