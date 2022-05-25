@@ -17,9 +17,6 @@ export class TracksController {
   @UseGuards(JwtAuthGuard)
   @Get('playlist/:id')
   async getPlaylistFromId(@Request() req) {
-    return await this.tracksService.getPlaylistFromId(
-      req.params.id,
-      req.user.name,
-    );
+    return await this.tracksService.getPlaylistFromId(req.params.id);
   }
 }

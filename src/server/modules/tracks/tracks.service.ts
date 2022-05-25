@@ -112,9 +112,9 @@ export class TracksService {
 
   async getPlaylistFromId(
     playlistId: string,
-    userId: string,
   ): Promise<Playlist> {
-    await this.userService.setSpotifyUserToken(userId);
+    const access = await this.spotifyService.clientCredentialsGrant().then((data) => data.body.access_token);
+    this.spotifyService.setAccessToken(access);
     const playlist = (
       await this.spotifyService.getPlaylist(playlistId, { market: 'US' })
     ).body;
