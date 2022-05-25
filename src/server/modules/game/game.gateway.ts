@@ -192,10 +192,7 @@ export class GameGateway
     client: Socket,
   ) {
     // get playlist tracks and update room with new tracks
-    const playlist = await this.tracksClient.getPlaylistFromId(
-      playlistId,
-      socketToSpotifyId.get(client.id),
-    );
+    const playlist = await this.tracksClient.getPlaylistFromId(playlistId);
     // send the title before tracks so it looks faster than it is :3
     this.server.to(id).emit('playlist', playlist.title);
     const room = rooms.get(id);
