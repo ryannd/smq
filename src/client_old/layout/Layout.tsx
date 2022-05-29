@@ -2,7 +2,7 @@ import { Center, Flex } from '@chakra-ui/react';
 import React, { ReactNode, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { NotLoggedIn } from '~client/pages';
-import fetcher from '../utils/fetcher';
+import fetcher from '../../client/utils/fetcher';
 import { ClientUser } from '../globals/types';
 
 import Header from './Header';
