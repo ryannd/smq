@@ -35,7 +35,11 @@ export class GameGateway
 {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('GameGateway');
-  constructor(private tracksClient: TracksService) {}
+  constructor(private tracksClient: TracksService) {
+    this.roundPause = this.roundPause.bind(this);
+    this.changeSong = this.changeSong.bind(this);
+    this.endGame = this.endGame.bind(this);
+  }
 
   @SubscribeMessage('joinRoom')
   async joinRoom(
@@ -61,10 +65,12 @@ export class GameGateway
         isAnswerCorrect: false,
         answer: '',
         id: user.id,
+        isReady: false,
       };
 
       // only add if user not in a different room already
       if (!spotifyIdToRoomId.has(user.id)) {
+        rooms.get(id).numUsers++;
         if (rooms.get(id).inGame) {
           // put user in waiting room
           rooms.get(id).waitingRoom.push(newUser);
@@ -126,6 +132,7 @@ export class GameGateway
       isAnswerCorrect: false,
       answer: '',
       id: user.id,
+      isReady: false,
     };
 
     // only create room if host not in another room already
@@ -137,7 +144,16 @@ export class GameGateway
         allTrackTitles: [],
         waitingRoom: [],
         inGame: false,
+        currentGame: {
+          rounds: 5,
+          currentRound: 0,
+          gameMode: '',
+          playlistTitle: '',
+        },
+        numReady: 0,
+        numUsers: 1,
       });
+
       rooms.get(id).users[user.id] = newUser;
       spotifyIdToRoomId.set(user.id, id);
       socketToSpotifyId.set(client.id, user.id);
@@ -150,7 +166,7 @@ export class GameGateway
   @SubscribeMessage('hostTopTracks')
   async topTracksMessage(
     @MessageBody('id') id: string,
-    @MessageBody('timeRange') timeRange: string,
+    @MessageBody('range') timeRange: string,
     @MessageBody('limit') limit: number,
   ) {
     // get top tracks of all users in the room based on criteria
@@ -188,14 +204,16 @@ export class GameGateway
   async playlistMessage(
     @MessageBody('id') id: string,
     @MessageBody('playlistId') playlistId: string,
-    @ConnectedSocket()
-    client: Socket,
   ) {
     // get playlist tracks and update room with new tracks
     const playlist = await this.tracksClient.getPlaylistFromId(playlistId);
     // send the title before tracks so it looks faster than it is :3
-    this.server.to(id).emit('playlist', playlist.title);
+    console.log(id);
     const room = rooms.get(id);
+    room.currentGame.gameMode = 'Playlist';
+    room.currentGame.playlistTitle = playlist.title;
+    this.server.to(id).emit('updateRoom', rooms.get(id));
+
     room.tracks = playlist.tracks;
     // save track titles for autofill (bc new song takes it out of tracks array so it doesnt get picked twice)
     room.allTrackTitles = room.tracks.map((v) => v.name);
@@ -209,16 +227,37 @@ export class GameGateway
     const room = rooms.get(id);
     // send tracks again in case someone joined late
     this.server.to(id).emit('updateRoom', room);
-    this.logger.log(`Room ${id} has begun their game.`);
+    this.logger.log(
+      `Room ${id} has begun their game with ${room.currentGame.rounds} rounds.`,
+    );
     // prep timer might remove or shorten later tbh
     this.server.to(id).emit('gameTimerStart');
     let count = 5;
+    const changeSong = this.changeSong;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
       if (count === 0) {
         clearInterval(countdown);
         room.inGame = true;
+        changeSong(id);
         io.to(id).emit('startAll');
+      }
+      count--;
+    }, 1000);
+  }
+
+  roundPause(id: string, roundCount: number, currentRound: number) {
+    const endGame = this.endGame;
+    const changeSong = this.changeSong;
+    let count = 5;
+    const countdown = setInterval(function () {
+      if (count === 0) {
+        clearInterval(countdown);
+        if (currentRound <= roundCount) {
+          changeSong(id);
+        } else {
+          endGame(id);
+        }
       }
       count--;
     }, 1000);
@@ -227,14 +266,15 @@ export class GameGateway
   @SubscribeMessage('newSong')
   changeSong(@MessageBody('id') id: string) {
     const io = this.server;
-
-    const tracks = rooms.get(id).tracks;
-    const users = rooms.get(id).users;
+    const room = rooms.get(id);
+    const tracks = room.tracks;
+    const users = room.users;
+    room.currentGame.currentRound++;
     // get random index of tracks array
     const index = Math.floor(Math.random() * tracks.length);
     const nextSong = tracks[index];
     // remove from array to prevent doubles
-    rooms.get(id).tracks.splice(index, 1);
+    room.tracks.splice(index, 1);
 
     this.server.to(id).emit('changeSong', nextSong);
     this.server.to(id).emit('newRound');
@@ -254,12 +294,13 @@ export class GameGateway
 
     // 20 sec round timer (19 bc of delay at start)
     let count = 19;
+    const roundPause = this.roundPause;
     io.to(id).emit('roundStartTick', 20);
     roundCountdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
       if (count == 0) {
         clearInterval(roundCountdown);
-        io.to(id).emit('roundDone');
+        roundPause(id, room.currentGame.rounds, room.currentGame.currentRound);
         io.to(id).emit('showTitle');
       }
       if (count < 0) {
@@ -331,6 +372,16 @@ export class GameGateway
     this.server.to(id).emit('updateRoom', rooms.get(id));
     this.server.to(id).emit('newGame');
     clearInterval(roundCountdown);
+  }
+
+  @SubscribeMessage('roundCount')
+  roundCount(
+    @MessageBody('id') id: string,
+    @MessageBody('rounds') rounds: number,
+  ) {
+    const room = rooms.get(id);
+    room.currentGame.rounds = rounds;
+    this.server.to(id).emit('updateRoom', rooms.get(id));
   }
 
   afterInit(server: Server) {

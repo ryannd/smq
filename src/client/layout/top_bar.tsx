@@ -1,49 +1,25 @@
-import {
-  Header,
-  Group,
-  ActionIcon,
-  useMantineColorScheme,
-  Space,
-  Button,
-} from '@mantine/core';
+import { Header, Group, Space, Title } from '@mantine/core';
 import Link from 'next/link';
-import {
-  BsFillMusicPlayerFill,
-  BsSunFill,
-  BsMoonStarsFill,
-} from 'react-icons/bs';
-import useSWR from 'swr';
-import fetcher from '../utils/fetcher';
+import { BsMusicNoteList } from 'react-icons/bs';
+import MenuLoggedIn from '~client/layout/menu_logged_in';
+import MenuLoggedOut from './menu_logged_out';
 
-const TopBar = () => {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const { data, error } = useSWR('/api/user/me', fetcher);
-  console.log(data);
+const TopBar = ({ data }) => {
   return (
     <Header height={60} fixed>
-      <Group sx={{ height: '100%' }} px={20} position="apart">
-        <BsFillMusicPlayerFill />
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {data ? (
-            <Button>{data.body.display_name}</Button>
-          ) : (
-            <Link href="/api/auth/login">
-              <Button>Login</Button>
-            </Link>
-          )}
-          <Space w="md" />
-          <ActionIcon
-            variant="light"
-            onClick={() => toggleColorScheme()}
-            size={30}
-          >
-            {colorScheme === 'dark' ? (
-              <BsSunFill size={16} />
-            ) : (
-              <BsMoonStarsFill size={16} />
-            )}
-          </ActionIcon>
-        </div>
+      <Group sx={{ height: '100%' }} px={25} position="apart">
+        <Link href="/">
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <BsMusicNoteList />
+            <Space w="md" />
+            <Title order={3}>SpotifyMusicQuiz</Title>
+          </div>
+        </Link>
+        {data ? (
+          <MenuLoggedIn name={data.body.display_name} />
+        ) : (
+          <MenuLoggedOut />
+        )}
       </Group>
     </Header>
   );
