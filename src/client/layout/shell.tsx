@@ -7,7 +7,9 @@ import fetcher from '~client/utils/fetcher';
 import TopBar from './top_bar';
 
 const Shell = ({ children }: { children: ReactNode }) => {
-  const { data } = useSWR('/api/user/me', fetcher);
+  const { data } = useSWR('/api/user/me', fetcher, {
+    revalidateOnFocus: false,
+  });
   const [user, setUser] = useState<ClientUser>();
 
   const childrenWithUser = React.Children.map(children, (child) => {
@@ -30,6 +32,7 @@ const Shell = ({ children }: { children: ReactNode }) => {
         setUser({
           name,
           id,
+          pic: { url: '', height: 0, width: 0 },
           url: '',
         });
       }
@@ -47,7 +50,14 @@ const Shell = ({ children }: { children: ReactNode }) => {
     <AppShell
       padding="md"
       header={<TopBar data={data} />}
-      styles={{ main: { height: '100vh', width: '100vw' } }}
+      styles={{
+        root: { height: '100vh', width: '100vw', overflow: 'hidden' },
+        body: {
+          height: 'calc(100% - 60px)',
+          width: '100%',
+          paddingTop: '60px',
+        },
+      }}
     >
       {childrenWithUser}
     </AppShell>

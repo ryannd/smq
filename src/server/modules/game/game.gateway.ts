@@ -239,8 +239,8 @@ export class GameGateway
       if (count === 0) {
         clearInterval(countdown);
         room.inGame = true;
-        changeSong(id);
         io.to(id).emit('startAll');
+        changeSong(id);
       }
       count--;
     }, 1000);
@@ -250,6 +250,7 @@ export class GameGateway
     const endGame = this.endGame;
     const changeSong = this.changeSong;
     let count = 5;
+    console.log('Round pause');
     const countdown = setInterval(function () {
       if (count === 0) {
         clearInterval(countdown);
@@ -275,7 +276,11 @@ export class GameGateway
     const nextSong = tracks[index];
     // remove from array to prevent doubles
     room.tracks.splice(index, 1);
-
+    console.log('New song');
+    if (nextSong === null) {
+      this.endGame(id);
+      return;
+    }
     this.server.to(id).emit('changeSong', nextSong);
     this.server.to(id).emit('newRound');
 
