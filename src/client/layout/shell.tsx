@@ -51,7 +51,7 @@ const Shell = ({ children }: { children: ReactNode }) => {
       padding="md"
       header={<TopBar data={data} />}
       styles={{
-        root: { height: '100vh', width: '100vw', overflow: 'hidden' },
+        root: { height: '100vh', width: '100vw', overflowX: 'hidden' },
         body: {
           height: 'calc(100% - 60px)',
           width: '100%',

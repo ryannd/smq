@@ -49,7 +49,7 @@ const HostSettings = ({ socket, roomId, user, roomData }) => {
             label="Number of rounds"
             stepHoldDelay={500}
             stepHoldInterval={100}
-            max={30}
+            max={roomData.tracks.length > 30 ? 30 : roomData.tracks.length}
             defaultValue={5}
             value={rounds}
             onChange={roundCount}

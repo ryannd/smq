@@ -259,7 +259,7 @@ export class GameGateway
     const countdown = setInterval(function () {
       if (count === 0) {
         clearInterval(countdown);
-        if (currentRound <= roundCount) {
+        if (currentRound < roundCount) {
           changeSong(id);
         } else {
           endGame(id);
@@ -338,6 +338,7 @@ export class GameGateway
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
     const users = rooms.get(id).users;
+    const room = rooms.get(id);
 
     // prevent keeping final answer shown at end screen
     Object.entries(users).forEach((entry) => {
@@ -346,10 +347,20 @@ export class GameGateway
         ...val,
         answer: '',
         voteSkip: false,
+        isReady: false,
       };
     });
-
-    rooms.get(id).inGame = false;
+    rooms.set(id, {
+      ...room,
+      inGame: false,
+      numReady: 0,
+      currentGame: {
+        rounds: 5,
+        currentRound: 0,
+        playlistTitle: '',
+        gameMode: '',
+      },
+    });
     this.logger.log(`Room ${id} has ended their game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
     clearInterval(roundCountdown);
@@ -373,13 +384,8 @@ export class GameGateway
       rooms.get(id).users[key] = {
         ...val,
         score: 0,
-        isReady: false,
       };
     });
-
-    rooms.get(id).currentGame.currentRound = 0;
-    rooms.get(id).currentGame.rounds = 5;
-    rooms.get(id).numReady = 0;
 
     this.logger.log(`Room ${id} chose to start a new game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
