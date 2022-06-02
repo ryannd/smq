@@ -1,5 +1,5 @@
 import { Stack, Title, Select, NumberInput, Button, Grid } from '@mantine/core';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PlaylistModal from '../modals/playlist_modal';
 import TopTracksModal from '../modals/top_tracks_modal';
 
@@ -8,18 +8,6 @@ const HostSettings = ({ socket, roomId, user, roomData }) => {
   const [topModal, setTopModal] = useState(false);
   const [playlistModal, setPlaylistModal] = useState(false);
   const [rounds, setRounds] = useState(5);
-
-  useEffect(() => {
-    if (!roomId || !socket || !user) return;
-    socket.emit('hostJoinRoom', {
-      id: roomId,
-      user,
-    });
-
-    return () => {
-      socket.off('hostJoinRoom');
-    };
-  }, [roomId, socket, user]);
 
   const roundCount = (value) => {
     socket.emit('roundCount', { id: roomId, rounds: value });

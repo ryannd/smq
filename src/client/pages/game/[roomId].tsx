@@ -1,19 +1,21 @@
-import { Button, Center, Grid, Title } from '@mantine/core';
+import { Grid, Center, Title, Button } from '@mantine/core';
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { useEffect, useState } from 'react';
-import { SocketRoom } from '~client/globals/types';
 import HostSettings from '~client/components/game/host_settings';
-import RoomInfo from '~client/components/game/room_info';
 import MainGame from '~client/components/game/main_game';
+import RoomInfo from '~client/components/game/room_info';
 import ScoreCol from '~client/components/game/score_col';
+import { SocketRoom } from '~client/globals/types';
 
-const Create = ({ user }) => {
+const NonHost = ({ user }) => {
+  const router = useRouter();
   const [socket, setSocket] = useState(null);
   const [roomData, setRoomData] = useState<SocketRoom>();
-  const [roomId] = useState((Math.random() + 1).toString(36).substring(7));
-  const [gameState, setGameState] = useState('wait');
   const [prep, setPrep] = useState(5);
-  const [host, setHost] = useState(true);
+  const [gameState, setGameState] = useState('wait');
+  const [host, setHost] = useState(false);
+  const { roomId } = router.query;
 
   useEffect(() => {
     const socketIo = io();
@@ -37,26 +39,26 @@ const Create = ({ user }) => {
     socketIo.on('endGame', () => {
       setGameState('end');
     });
+    socketIo.on('newHost', () => {
+      setHost(true);
+    });
     socketIo.on('gameTimerStart', () => {
       setGameState('prep');
     });
     socketIo.on('timerStartTick', (s) => {
       setPrep(s);
     });
-    return () => {
-      socketIo.off('updateRoom');
-    };
   }, []);
 
   useEffect(() => {
     if (!roomId || !socket || !user) return;
-    socket.emit('hostJoinRoom', {
+    socket.emit('joinRoom', {
       id: roomId,
       user,
     });
 
     return () => {
-      socket.off('hostJoinRoom');
+      socket.off('joinRoom');
     };
   }, [roomId, socket, user]);
 
@@ -69,13 +71,15 @@ const Create = ({ user }) => {
       case 'wait':
         return (
           <>
-            <HostSettings
-              roomData={roomData}
-              socket={socket}
-              roomId={roomId}
-              user={user}
-            />
-            <Grid.Col xs={12} xl={6}>
+            {host && (
+              <HostSettings
+                roomData={roomData}
+                socket={socket}
+                roomId={roomId}
+                user={user}
+              />
+            )}
+            <Grid.Col xs={12} xl={6} style={{ textAlign: 'center' }}>
               <RoomInfo
                 roomData={roomData}
                 roomId={roomId}
@@ -94,13 +98,27 @@ const Create = ({ user }) => {
             roomId={roomId}
           />
         );
+      case 'notExist':
+        return (
+          <Grid.Col xs={12} xl={6}>
+            <Title>This room does not exist.</Title>
+          </Grid.Col>
+        );
+      case 'disconnect':
+        return (
+          <Grid.Col xs={12} xl={6}>
+            <Title>The host disconnected.</Title>
+          </Grid.Col>
+        );
       case 'end':
         return (
-          host && (
-            <Button onClick={() => socket.emit('newGame', { id: roomId })}>
-              New Game
-            </Button>
-          )
+          <>
+            {host && (
+              <Button onClick={() => socket.emit('newGame', { id: roomId })}>
+                New Game
+              </Button>
+            )}
+          </>
         );
       case 'prep':
         return <Title>{prep}</Title>;
@@ -133,4 +151,4 @@ const Create = ({ user }) => {
   );
 };
 
-export default Create;
+export default NonHost;

@@ -79,7 +79,7 @@ export type Track = {
   track_number: number;
   type: string;
   uri: string;
-  images: string[];
+  images: [{ height: null; url: string; width: null }];
   artists: string[];
 };
 
