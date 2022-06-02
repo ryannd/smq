@@ -187,7 +187,8 @@ export class GameGateway
         );
       }),
     );
-
+    room.currentGame.gameMode = 'Top Tracks';
+    this.server.to(id).emit('updateRoom', rooms.get(id));
     // remove duplicates
     room.tracks = tracks
       .flat()

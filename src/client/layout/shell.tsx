@@ -56,6 +56,7 @@ const Shell = ({ children }: { children: ReactNode }) => {
           height: 'calc(100% - 60px)',
           width: '100%',
           paddingTop: '60px',
+          overflowX: 'hidden',
         },
       }}
     >

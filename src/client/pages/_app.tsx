@@ -6,7 +6,6 @@ import {
   MantineProvider,
 } from '@mantine/core';
 import Shell from '~client/layout/shell';
-import '../globals/styles.css';
 import { useState } from 'react';
 
 export default function App(props: AppProps) {
