@@ -255,7 +255,6 @@ export class GameGateway
     const endGame = this.endGame;
     const changeSong = this.changeSong;
     let count = 5;
-    console.log(id + ' pause');
     const countdown = setInterval(function () {
       if (count === 0) {
         clearInterval(countdown);
@@ -272,7 +271,6 @@ export class GameGateway
   changeSong(id: string) {
     const io = this.server;
     const room = rooms.get(id);
-    console.log(id + ' change song');
     const tracks = room.tracks;
     const users = room.users;
     room.currentGame.currentRound++;
@@ -281,7 +279,6 @@ export class GameGateway
     const nextSong = tracks[index];
     // remove from array to prevent doubles
     room.tracks.splice(index, 1);
-
     if (nextSong == null) {
       this.endGame(id);
       return;
@@ -378,6 +375,10 @@ export class GameGateway
         isReady: false,
       };
     });
+
+    rooms.get(id).currentGame.currentRound = 0;
+    rooms.get(id).currentGame.rounds = 5;
+    rooms.get(id).numReady = 0;
 
     this.logger.log(`Room ${id} chose to start a new game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));

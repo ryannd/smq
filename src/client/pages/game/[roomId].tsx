@@ -6,7 +6,7 @@ import HostSettings from '~client/components/game/host_settings';
 import MainGame from '~client/components/game/main_game';
 import RoomInfo from '~client/components/game/room_info';
 import ScoreCol from '~client/components/game/score_col';
-import { SocketRoom } from '~client/globals/types';
+import { SocketRoom, Track } from '~client/globals/types';
 
 const NonHost = ({ user }) => {
   const router = useRouter();
@@ -15,6 +15,7 @@ const NonHost = ({ user }) => {
   const [prep, setPrep] = useState(5);
   const [gameState, setGameState] = useState('wait');
   const [host, setHost] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState<Track>();
   const { roomId } = router.query;
 
   useEffect(() => {
@@ -28,6 +29,7 @@ const NonHost = ({ user }) => {
       setGameState('game');
     });
     socketIo.on('newGame', () => {
+      setPrep(5);
       setGameState('wait');
     });
     socketIo.on('hostDisconnect', () => {
@@ -44,6 +46,9 @@ const NonHost = ({ user }) => {
     });
     socketIo.on('gameTimerStart', () => {
       setGameState('prep');
+    });
+    socketIo.on('changeSong', (s) => {
+      setCurrentTrack(s);
     });
     socketIo.on('timerStartTick', (s) => {
       setPrep(s);
@@ -96,6 +101,7 @@ const NonHost = ({ user }) => {
             user={user}
             roomData={roomData}
             roomId={roomId}
+            currentTrack={currentTrack}
           />
         );
       case 'notExist':

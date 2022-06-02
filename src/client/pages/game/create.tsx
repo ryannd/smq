@@ -1,7 +1,7 @@
 import { Button, Center, Grid, Title } from '@mantine/core';
 import { io } from 'socket.io-client';
 import { useEffect, useState } from 'react';
-import { SocketRoom } from '~client/globals/types';
+import { SocketRoom, Track } from '~client/globals/types';
 import HostSettings from '~client/components/game/host_settings';
 import RoomInfo from '~client/components/game/room_info';
 import MainGame from '~client/components/game/main_game';
@@ -12,6 +12,7 @@ const Create = ({ user }) => {
   const [roomData, setRoomData] = useState<SocketRoom>();
   const [roomId] = useState((Math.random() + 1).toString(36).substring(7));
   const [gameState, setGameState] = useState('wait');
+  const [currentTrack, setCurrentTrack] = useState<Track>();
   const [prep, setPrep] = useState(5);
   const [host, setHost] = useState(true);
 
@@ -26,6 +27,7 @@ const Create = ({ user }) => {
       setGameState('game');
     });
     socketIo.on('newGame', () => {
+      setPrep(5);
       setGameState('wait');
     });
     socketIo.on('hostDisconnect', () => {
@@ -42,6 +44,9 @@ const Create = ({ user }) => {
     });
     socketIo.on('timerStartTick', (s) => {
       setPrep(s);
+    });
+    socketIo.on('changeSong', (s) => {
+      setCurrentTrack(s);
     });
     return () => {
       socketIo.off('updateRoom');
@@ -92,6 +97,7 @@ const Create = ({ user }) => {
             user={user}
             roomData={roomData}
             roomId={roomId}
+            currentTrack={currentTrack}
           />
         );
       case 'end':
