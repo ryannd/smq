@@ -255,6 +255,7 @@ export class GameGateway
     const endGame = this.endGame;
     const changeSong = this.changeSong;
     let count = 5;
+    console.log(id + ' pause');
     const countdown = setInterval(function () {
       if (count === 0) {
         clearInterval(countdown);
@@ -268,10 +269,10 @@ export class GameGateway
     }, 1000);
   }
 
-  @SubscribeMessage('newSong')
-  changeSong(@MessageBody('id') id: string) {
+  changeSong(id: string) {
     const io = this.server;
     const room = rooms.get(id);
+    console.log(id + ' change song');
     const tracks = room.tracks;
     const users = room.users;
     room.currentGame.currentRound++;
