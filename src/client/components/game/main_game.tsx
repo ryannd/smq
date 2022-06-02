@@ -23,6 +23,7 @@ const MainGame = ({ socket, user, roomId, roomData }) => {
   useEffect(() => {
     if (!socket || !roomId) return;
     socket.on('changeSong', (s) => {
+      setShowTitle(false);
       setCurrentTrack(s);
     });
 
