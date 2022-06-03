@@ -36,6 +36,16 @@ export type SocketRoom = {
   tracks: any[];
   allTrackTitles: string[];
   inGame: boolean;
+  numReady: number;
+  numUsers: number;
+  currentGame: GameInfo;
+};
+
+export type GameInfo = {
+  rounds: number;
+  currentRound: number;
+  gameMode: string;
+  playlistTitle?: string;
 };
 
 export type SocketUser = {
@@ -45,6 +55,7 @@ export type SocketUser = {
   isAnswerCorrect: boolean;
   answer: string;
   score: number;
+  isReady: boolean;
 };
 
 export type ClientUser = {

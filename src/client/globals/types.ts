@@ -1,4 +1,10 @@
-export type User = {
+export type AuthInfo = {
+  accessToken: string;
+  refreshToken: string;
+  expires_in: number;
+};
+
+export type ProfileJson = {
   country: string;
   display_name: string;
   email: string;
@@ -21,6 +27,37 @@ export type User = {
   uri: string;
 };
 
+export type SocketRoom = {
+  host: string;
+  users: {
+    [key: string]: SocketUser;
+  };
+  waitingRoom: SocketUser[];
+  tracks: any[];
+  allTrackTitles: string[];
+  inGame: boolean;
+  numReady: number;
+  numUsers: number;
+  currentGame: GameInfo;
+};
+
+export type GameInfo = {
+  rounds: number;
+  currentRound: number;
+  gameMode: string;
+  playlistTitle?: string;
+};
+
+export type SocketUser = {
+  user: ClientUser;
+  id: string;
+  voteSkip: boolean;
+  isAnswerCorrect: boolean;
+  answer: string;
+  score: number;
+  isReady: boolean;
+};
+
 export type ClientUser = {
   name: string;
   pic?: {
@@ -30,34 +67,6 @@ export type ClientUser = {
   };
   url: string;
   id: string;
-};
-export type GameRoom = {
-  host: string;
-  users: {
-    [key: string]: GameUser;
-  };
-  waitingRoom: GameUser[];
-  tracks: Track[];
-  allTrackTitles: string[];
-  inGame: boolean;
-};
-
-export type GameUser = {
-  user: {
-    name: string;
-    pic?: {
-      url: string;
-      height: number;
-      width: number;
-    };
-    url: string;
-    id: string;
-  };
-  id: string;
-  voteSkip: boolean;
-  isAnswerCorrect: boolean;
-  answer: string;
-  score: number;
 };
 
 export type Track = {
@@ -70,6 +79,11 @@ export type Track = {
   track_number: number;
   type: string;
   uri: string;
-  images: string[];
+  images: [{ height: null; url: string; width: null }];
   artists: string[];
+};
+
+export type Playlist = {
+  title: string;
+  tracks: Track[];
 };

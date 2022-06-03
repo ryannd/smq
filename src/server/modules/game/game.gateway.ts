@@ -35,7 +35,11 @@ export class GameGateway
 {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('GameGateway');
-  constructor(private tracksClient: TracksService) {}
+  constructor(private tracksClient: TracksService) {
+    this.roundPause = this.roundPause.bind(this);
+    this.changeSong = this.changeSong.bind(this);
+    this.endGame = this.endGame.bind(this);
+  }
 
   @SubscribeMessage('joinRoom')
   async joinRoom(
@@ -61,6 +65,7 @@ export class GameGateway
         isAnswerCorrect: false,
         answer: '',
         id: user.id,
+        isReady: false,
       };
 
       // only add if user not in a different room already
@@ -71,6 +76,7 @@ export class GameGateway
           this.server.to(client.id).emit('updateRoom', rooms.get(id));
         } else {
           rooms.get(id).users[user.id] = newUser;
+          rooms.get(id).numUsers++;
         }
 
         spotifyIdToRoomId.set(user.id, id);
@@ -87,6 +93,7 @@ export class GameGateway
     // get user id and set vote skip to true
     const spotify = socketToSpotifyId.get(client.id);
     const users = rooms.get(id).users;
+    const room = rooms.get(id);
     users[spotify].voteSkip = true;
 
     // send vote to room
@@ -105,6 +112,11 @@ export class GameGateway
       this.logger.log(`Skipped song in room: ${id}`);
       this.server.to(id).emit('roundDone');
       this.server.to(id).emit('showTitle');
+      this.roundPause(
+        id,
+        room.currentGame.rounds,
+        room.currentGame.currentRound,
+      );
       clearInterval(roundCountdown);
     }
   }
@@ -126,6 +138,7 @@ export class GameGateway
       isAnswerCorrect: false,
       answer: '',
       id: user.id,
+      isReady: false,
     };
 
     // only create room if host not in another room already
@@ -137,7 +150,16 @@ export class GameGateway
         allTrackTitles: [],
         waitingRoom: [],
         inGame: false,
+        currentGame: {
+          rounds: 5,
+          currentRound: 0,
+          gameMode: '',
+          playlistTitle: '',
+        },
+        numReady: 0,
+        numUsers: 1,
       });
+
       rooms.get(id).users[user.id] = newUser;
       spotifyIdToRoomId.set(user.id, id);
       socketToSpotifyId.set(client.id, user.id);
@@ -150,7 +172,7 @@ export class GameGateway
   @SubscribeMessage('hostTopTracks')
   async topTracksMessage(
     @MessageBody('id') id: string,
-    @MessageBody('timeRange') timeRange: string,
+    @MessageBody('range') timeRange: string,
     @MessageBody('limit') limit: number,
   ) {
     // get top tracks of all users in the room based on criteria
@@ -165,7 +187,8 @@ export class GameGateway
         );
       }),
     );
-
+    room.currentGame.gameMode = 'Top Tracks';
+    this.server.to(id).emit('updateRoom', rooms.get(id));
     // remove duplicates
     room.tracks = tracks
       .flat()
@@ -188,14 +211,15 @@ export class GameGateway
   async playlistMessage(
     @MessageBody('id') id: string,
     @MessageBody('playlistId') playlistId: string,
-    @ConnectedSocket()
-    client: Socket,
   ) {
     // get playlist tracks and update room with new tracks
     const playlist = await this.tracksClient.getPlaylistFromId(playlistId);
     // send the title before tracks so it looks faster than it is :3
-    this.server.to(id).emit('playlist', playlist.title);
     const room = rooms.get(id);
+    room.currentGame.gameMode = 'Playlist';
+    room.currentGame.playlistTitle = playlist.title;
+    this.server.to(id).emit('updateRoom', rooms.get(id));
+
     room.tracks = playlist.tracks;
     // save track titles for autofill (bc new song takes it out of tracks array so it doesnt get picked twice)
     room.allTrackTitles = room.tracks.map((v) => v.name);
@@ -209,33 +233,57 @@ export class GameGateway
     const room = rooms.get(id);
     // send tracks again in case someone joined late
     this.server.to(id).emit('updateRoom', room);
-    this.logger.log(`Room ${id} has begun their game.`);
+    this.logger.log(
+      `Room ${id} has begun their game with ${room.currentGame.rounds} rounds.`,
+    );
     // prep timer might remove or shorten later tbh
     this.server.to(id).emit('gameTimerStart');
     let count = 5;
+    const changeSong = this.changeSong;
     const countdown = setInterval(function () {
       io.to(id).emit('timerStartTick', count);
       if (count === 0) {
         clearInterval(countdown);
         room.inGame = true;
         io.to(id).emit('startAll');
+        changeSong(id);
       }
       count--;
     }, 1000);
   }
 
-  @SubscribeMessage('newSong')
-  changeSong(@MessageBody('id') id: string) {
-    const io = this.server;
+  roundPause(id: string, roundCount: number, currentRound: number) {
+    const endGame = this.endGame;
+    const changeSong = this.changeSong;
+    let count = 5;
+    const countdown = setInterval(function () {
+      if (count === 0) {
+        clearInterval(countdown);
+        if (currentRound < roundCount) {
+          changeSong(id);
+        } else {
+          endGame(id);
+        }
+      }
+      count--;
+    }, 1000);
+  }
 
-    const tracks = rooms.get(id).tracks;
-    const users = rooms.get(id).users;
+  changeSong(id: string) {
+    const io = this.server;
+    const room = rooms.get(id);
+    const tracks = room.tracks;
+    const users = room.users;
+    room.currentGame.currentRound++;
     // get random index of tracks array
     const index = Math.floor(Math.random() * tracks.length);
     const nextSong = tracks[index];
     // remove from array to prevent doubles
-    rooms.get(id).tracks.splice(index, 1);
-
+    room.tracks.splice(index, 1);
+    if (nextSong == null) {
+      this.endGame(id);
+      return;
+    }
     this.server.to(id).emit('changeSong', nextSong);
     this.server.to(id).emit('newRound');
 
@@ -254,12 +302,13 @@ export class GameGateway
 
     // 20 sec round timer (19 bc of delay at start)
     let count = 19;
+    const roundPause = this.roundPause;
     io.to(id).emit('roundStartTick', 20);
     roundCountdown = setInterval(function () {
       io.to(id).emit('roundStartTick', count);
       if (count == 0) {
         clearInterval(roundCountdown);
-        io.to(id).emit('roundDone');
+        roundPause(id, room.currentGame.rounds, room.currentGame.currentRound);
         io.to(id).emit('showTitle');
       }
       if (count < 0) {
@@ -289,6 +338,7 @@ export class GameGateway
   endGame(@MessageBody('id') id: string) {
     this.server.to(id).emit('endGame');
     const users = rooms.get(id).users;
+    const room = rooms.get(id);
 
     // prevent keeping final answer shown at end screen
     Object.entries(users).forEach((entry) => {
@@ -297,10 +347,20 @@ export class GameGateway
         ...val,
         answer: '',
         voteSkip: false,
+        isReady: false,
       };
     });
-
-    rooms.get(id).inGame = false;
+    rooms.set(id, {
+      ...room,
+      inGame: false,
+      numReady: 0,
+      currentGame: {
+        ...room.currentGame,
+        currentRound: 0,
+        playlistTitle: '',
+        gameMode: '',
+      },
+    });
     this.logger.log(`Room ${id} has ended their game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
     clearInterval(roundCountdown);
@@ -315,6 +375,7 @@ export class GameGateway
     // move users from waiting room to game
     rooms.get(id).waitingRoom.forEach((user) => {
       users[user.id] = user;
+      rooms.get(id).numUsers++;
     });
     rooms.get(id).waitingRoom = [];
 
@@ -326,11 +387,31 @@ export class GameGateway
         score: 0,
       };
     });
-
+    rooms.get(id).currentGame.rounds = 5;
     this.logger.log(`Room ${id} chose to start a new game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
     this.server.to(id).emit('newGame');
     clearInterval(roundCountdown);
+  }
+
+  @SubscribeMessage('roundCount')
+  roundCount(
+    @MessageBody('id') id: string,
+    @MessageBody('rounds') rounds: number,
+  ) {
+    const room = rooms.get(id);
+    room.currentGame.rounds = rounds;
+    this.server.to(id).emit('updateRoom', rooms.get(id));
+  }
+
+  @SubscribeMessage('ready')
+  ready(@MessageBody('id') id: string, @MessageBody('user') user: ClientUser) {
+    const room = rooms.get(id);
+    if (room.users[user.id].isReady !== true) {
+      room.users[user.id].isReady = true;
+      room.numReady++;
+    }
+    this.server.to(id).emit('updateRoom', room);
   }
 
   afterInit(server: Server) {
@@ -345,15 +426,30 @@ export class GameGateway
       room = hostToRoomId.get(spotify);
       if (rooms.get(room) !== undefined) {
         const users = rooms.get(room).users;
-        Object.keys(users).forEach((user) => spotifyIdToRoomId.delete(user));
-        this.server.to(room).emit('hostDisconnect');
+        delete rooms.get(room).users[spotify];
         hostToRoomId.delete(spotify);
-        rooms.delete(room);
+        spotifyIdToRoomId.delete(spotify);
+
+        this.server.to(room).emit('updateRoom', rooms.get(room));
+        rooms.get(room).numUsers--;
+        if (Object.keys(rooms.get(room).users).length === 0) {
+          rooms.delete(room);
+          this.server.to(room).emit('hostDisconnect');
+        } else {
+          const newHost = Object.keys(users)[0];
+          hostToRoomId.set(users[newHost].id, room);
+          for (const [k, v] of socketToSpotifyId.entries()) {
+            if (v === newHost) {
+              this.server.to(k).emit('newHost');
+            }
+          }
+        }
       }
     } else {
       room = spotifyIdToRoomId.get(spotify);
       if (rooms.get(room) !== undefined) {
         delete rooms.get(room).users[spotify];
+        rooms.get(room).numUsers--;
         this.server.to(room).emit('updateRoom', rooms.get(room));
         spotifyIdToRoomId.delete(spotify);
       }

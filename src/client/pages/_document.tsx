@@ -1,15 +1,16 @@
-import { ColorModeScript } from '@chakra-ui/react';
-import { FlashlessScript } from 'chakra-ui-flashless';
-import NextDocument, { Html, Head, Main, NextScript } from 'next/document';
-import theme from '../theme';
-export default class Document extends NextDocument {
+import { createGetInitialProps } from '@mantine/next';
+import Document, { Head, Html, Main, NextScript } from 'next/document';
+
+const getInitialProps = createGetInitialProps();
+
+export default class _Document extends Document {
+  static getInitialProps = getInitialProps;
+
   render() {
     return (
-      <Html lang="en">
+      <Html>
         <Head />
         <body>
-          <FlashlessScript theme={theme} />
-          <ColorModeScript initialColorMode={theme.config.initialColorMode} />
           <Main />
           <NextScript />
         </body>
