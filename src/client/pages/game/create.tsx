@@ -132,7 +132,7 @@ const Create = ({ user }) => {
           xl={3}
           style={{ width: '100%', height: '100%' }}
         >
-          <ScoreCol roomData={roomData} />
+          <ScoreCol roomData={roomData} roomId={roomId} />
         </Grid.Col>
       </Grid>
     </>

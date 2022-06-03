@@ -1,6 +1,7 @@
 import {
   Autocomplete,
   BackgroundImage,
+  Badge,
   Button,
   Card,
   Grid,
@@ -9,6 +10,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useEffect, useRef, useState } from 'react';
+import { ImCheckmark, ImCross } from 'react-icons/im';
 
 const MainGame = ({ socket, user, roomId, roomData, currentTrack }) => {
   const [answer, setAnswer] = useState('');
@@ -101,7 +103,26 @@ const MainGame = ({ socket, user, roomId, roomData, currentTrack }) => {
               >
                 {showTitle && (
                   <Card>
-                    <Title color="white">{currentTrack.name}</Title>
+                    <Title color="white" align="center">
+                      {currentTrack.name}
+                      {isAnswerCorrect ? (
+                        <Badge
+                          style={{ marginLeft: '10px' }}
+                          radius="xs"
+                          color="green"
+                        >
+                          <ImCheckmark />
+                        </Badge>
+                      ) : (
+                        <Badge
+                          style={{ marginLeft: '10px' }}
+                          radius="xs"
+                          color="red"
+                        >
+                          <ImCross />
+                        </Badge>
+                      )}
+                    </Title>
                   </Card>
                 )}
               </BackgroundImage>

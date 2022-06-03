@@ -70,13 +70,13 @@ export class GameGateway
 
       // only add if user not in a different room already
       if (!spotifyIdToRoomId.has(user.id)) {
-        rooms.get(id).numUsers++;
         if (rooms.get(id).inGame) {
           // put user in waiting room
           rooms.get(id).waitingRoom.push(newUser);
           this.server.to(client.id).emit('updateRoom', rooms.get(id));
         } else {
           rooms.get(id).users[user.id] = newUser;
+          rooms.get(id).numUsers++;
         }
 
         spotifyIdToRoomId.set(user.id, id);
@@ -355,7 +355,7 @@ export class GameGateway
       inGame: false,
       numReady: 0,
       currentGame: {
-        rounds: 5,
+        ...room.currentGame,
         currentRound: 0,
         playlistTitle: '',
         gameMode: '',
@@ -375,6 +375,7 @@ export class GameGateway
     // move users from waiting room to game
     rooms.get(id).waitingRoom.forEach((user) => {
       users[user.id] = user;
+      rooms.get(id).numUsers++;
     });
     rooms.get(id).waitingRoom = [];
 
@@ -386,7 +387,7 @@ export class GameGateway
         score: 0,
       };
     });
-
+    rooms.get(id).currentGame.rounds = 5;
     this.logger.log(`Room ${id} chose to start a new game.`);
     this.server.to(id).emit('updateRoom', rooms.get(id));
     this.server.to(id).emit('newGame');
@@ -430,7 +431,7 @@ export class GameGateway
         spotifyIdToRoomId.delete(spotify);
 
         this.server.to(room).emit('updateRoom', rooms.get(room));
-
+        rooms.get(room).numUsers--;
         if (Object.keys(rooms.get(room).users).length === 0) {
           rooms.delete(room);
           this.server.to(room).emit('hostDisconnect');
@@ -448,6 +449,7 @@ export class GameGateway
       room = spotifyIdToRoomId.get(spotify);
       if (rooms.get(room) !== undefined) {
         delete rooms.get(room).users[spotify];
+        rooms.get(room).numUsers--;
         this.server.to(room).emit('updateRoom', rooms.get(room));
         spotifyIdToRoomId.delete(spotify);
       }

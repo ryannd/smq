@@ -38,6 +38,9 @@ const NonHost = ({ user }) => {
     socketIo.on('roomDoesNotExist', () => {
       setGameState('notExist');
     });
+    socketIo.on('roomInGame', () => {
+      setGameState('waitingRoom');
+    });
     socketIo.on('endGame', () => {
       setGameState('end');
     });
@@ -128,6 +131,8 @@ const NonHost = ({ user }) => {
         );
       case 'prep':
         return <Title>{prep}</Title>;
+      case 'waitingRoom':
+        return <Title>Room is in game, please wait for the next round.</Title>;
     }
   };
 
@@ -150,7 +155,7 @@ const NonHost = ({ user }) => {
           xl={3}
           style={{ width: '100%', height: '100%' }}
         >
-          <ScoreCol roomData={roomData} />
+          <ScoreCol roomData={roomData} roomId={roomId} />
         </Grid.Col>
       </Grid>
     </>
