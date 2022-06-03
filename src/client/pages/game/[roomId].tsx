@@ -8,7 +8,7 @@ import RoomInfo from '~client/components/game/room_info';
 import ScoreCol from '~client/components/game/score_col';
 import { SocketRoom, Track } from '~client/globals/types';
 
-const NonHost = ({ user }) => {
+const NonCreate = ({ user }) => {
   const router = useRouter();
   const [socket, setSocket] = useState(null);
   const [roomData, setRoomData] = useState<SocketRoom>();
@@ -162,4 +162,4 @@ const NonHost = ({ user }) => {
   );
 };
 
-export default NonHost;
+export default NonCreate;
