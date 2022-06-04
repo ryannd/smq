@@ -1,6 +1,6 @@
 import { Button, Divider, Menu, useMantineColorScheme } from '@mantine/core';
 import { BsMoonStarsFill, BsSunFill } from 'react-icons/bs';
-import { RiProfileFill, RiLogoutBoxFill } from 'react-icons/ri';
+import { RiLogoutBoxFill } from 'react-icons/ri';
 import cookieCutter from 'cookie-cutter';
 
 const MenuLoggedIn = ({ name }) => {
@@ -20,7 +20,7 @@ const MenuLoggedIn = ({ name }) => {
       size="md"
     >
       <Menu.Label>Account</Menu.Label>
-      <Menu.Item icon={<RiProfileFill />}>Profile</Menu.Item>
+      {/* <Menu.Item icon={<RiProfileFill />}>Profile</Menu.Item> */}
       <Menu.Item color="red" icon={<RiLogoutBoxFill />} onClick={logout}>
         Logout
       </Menu.Item>

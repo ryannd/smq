@@ -102,11 +102,13 @@ const Create = ({ user }) => {
         );
       case 'end':
         return (
-          host && (
-            <Button onClick={() => socket.emit('newGame', { id: roomId })}>
-              New Game
-            </Button>
-          )
+          <>
+            {host && (
+              <Button onClick={() => socket.emit('newGame', { id: roomId })}>
+                New Game
+              </Button>
+            )}
+          </>
         );
       case 'prep':
         return <Title>{prep}</Title>;
