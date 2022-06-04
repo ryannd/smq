@@ -11,6 +11,8 @@ const ScoreCol = ({ roomData, roomId }) => {
           Room Code: {roomId} | Waiting: {roomData.waitingRoom.length}
         </Text>
         {roomData.users && (
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           <FlipMove>
             {Object.keys(roomData.users)
               .map((user) => roomData.users[user])
