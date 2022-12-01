@@ -31,9 +31,13 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-<img src="https://i.imgur.com/MTovYSA.png" width="960" height="450"/>
-<img src="https://i.imgur.com/038ApIE.png" width="960" height="450"/>
-
+<div align="center">
+    <img src="https://i.imgur.com/upBdWmp.png" width="960" height="450"/>
+    <img src="https://i.imgur.com/Ky4Z1VY.png" width="960" height="450"/>
+    <img src="https://i.imgur.com/pmwyKBL.png" width="450" height="960"/>
+    <img src="https://i.imgur.com/HZSQcD2.png" width="450" height="960"/>
+</div>
+<br>
 Inspired by [Anime Music Quiz](https://animemusicquiz.com/).
 
 To play, DM "ryan d#6648" on Discord to get whitelisted for Spotify API access or **NEW** play as a guest. (no top track feature for guest users)
